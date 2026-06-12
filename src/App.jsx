@@ -1104,29 +1104,51 @@ export default function App() {
   const [commandes, setCommandes] = useState([]);
   const [historique, setHistorique] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState(null);
 
   useEffect(() => {
-    (async () => {
-      const [{ data: arts }, { data: cmds }, { data: hist }] = await Promise.all([
-        supabase.from("articles").select("*").order("id"),
-        supabase.from("commandes").select("*"),
-        supabase.from("historique").select("*").order("id", { ascending: false }),
-      ]);
-      if (!arts?.length) {
-        await supabase.from("articles").insert(INITIAL_ARTICLES);
-        setArticles(INITIAL_ARTICLES);
-      } else setArticles(arts);
-      if (!cmds?.length) {
-        await supabase.from("commandes").insert(INITIAL_COMMANDES);
-        setCommandes(INITIAL_COMMANDES);
-      } else setCommandes(cmds);
-      if (hist?.length) setHistorique(hist.map(dbToHist));
-      else if (INITIAL_HISTORIQUE.length) {
-        await supabase.from("historique").insert(INITIAL_HISTORIQUE.map(histToDb));
-        setHistorique(INITIAL_HISTORIQUE);
-      }
+    const timeout = setTimeout(() => {
+      setArticles(INITIAL_ARTICLES);
+      setCommandes(INITIAL_COMMANDES);
+      setHistorique(INITIAL_HISTORIQUE);
+      setDbError("Impossible de joindre la base de données. Mode hors-ligne activé.");
       setLoading(false);
+    }, 6000);
+
+    (async () => {
+      try {
+        const [{ data: arts, error: e1 }, { data: cmds, error: e2 }, { data: hist, error: e3 }] = await Promise.all([
+          supabase.from("articles").select("*").order("id"),
+          supabase.from("commandes").select("*"),
+          supabase.from("historique").select("*").order("id", { ascending: false }),
+        ]);
+        if (e1 || e2 || e3) throw new Error((e1 || e2 || e3).message);
+        clearTimeout(timeout);
+        if (!arts?.length) {
+          await supabase.from("articles").insert(INITIAL_ARTICLES);
+          setArticles(INITIAL_ARTICLES);
+        } else setArticles(arts);
+        if (!cmds?.length) {
+          await supabase.from("commandes").insert(INITIAL_COMMANDES);
+          setCommandes(INITIAL_COMMANDES);
+        } else setCommandes(cmds);
+        if (hist?.length) setHistorique(hist.map(dbToHist));
+        else if (INITIAL_HISTORIQUE.length) {
+          await supabase.from("historique").insert(INITIAL_HISTORIQUE.map(histToDb));
+          setHistorique(INITIAL_HISTORIQUE);
+        }
+      } catch (err) {
+        clearTimeout(timeout);
+        console.error("Supabase error:", err.message);
+        setArticles(INITIAL_ARTICLES);
+        setCommandes(INITIAL_COMMANDES);
+        setHistorique(INITIAL_HISTORIQUE);
+        setDbError("Base de données inaccessible — mode hors-ligne.");
+      } finally {
+        setLoading(false);
+      }
     })();
+    return () => clearTimeout(timeout);
   }, []);
   const [screen, setScreen] = useState("dashboard");
   const [selectedCmd, setSelectedCmd] = useState(null);
@@ -1308,6 +1330,15 @@ export default function App() {
             </div>
           )}
         </div>
+
+        {/* Bannière erreur DB */}
+        {dbError && (
+          <div style={{ background: css.warnLt, borderBottom: `1px solid ${css.warn}`,
+            padding: "7px 16px", fontSize: 11, color: css.warn, fontWeight: 600,
+            display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            ⚠️ {dbError}
+          </div>
+        )}
 
         {/* Contenu de l'écran */}
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>

@@ -2,44 +2,11 @@ import { useState, useMemo, useEffect } from "react";
 import { supabase } from "./supabase";
 
 // ── Données initiales ─────────────────────────────────────────────────────────
-const INITIAL_ARTICLES = [
-  { id: "ART-01", nom: "Farine T65",       unite: "kg",         stock: 18, seuil: 10, prix: 1.50  },
-  { id: "ART-02", nom: "Riz basmati",      unite: "kg",         stock: 32, seuil: 10, prix: 2.20  },
-  { id: "ART-03", nom: "Huile d'olive",    unite: "bouteilles", stock: 3,  seuil: 5,  prix: 8.50  },
-  { id: "ART-04", nom: "Sucre roux",       unite: "kg",         stock: 4,  seuil: 5,  prix: 1.80  },
-  { id: "ART-05", nom: "Pâtes rigatoni",   unite: "kg",         stock: 22, seuil: 8,  prix: 1.90  },
-  { id: "ART-06", nom: "Sauce tomate",     unite: "boîtes",     stock: 14, seuil: 6,  prix: 1.20  },
-  { id: "ART-07", nom: "Lait entier",      unite: "litres",     stock: 0,  seuil: 6,  prix: 1.10  },
-  { id: "ART-08", nom: "Lentilles vertes", unite: "kg",         stock: 9,  seuil: 4,  prix: 2.50  },
-  { id: "ART-09", nom: "Sel de mer",       unite: "kg",         stock: 7,  seuil: 2,  prix: 0.90  },
-  { id: "ART-10", nom: "Café moulu",       unite: "kg",         stock: 2,  seuil: 3,  prix: 12.00 },
-];
+const INITIAL_ARTICLES = [];
 
-const INITIAL_COMMANDES = [
-  { id: "CMD-047", client: "Marie Fontaine",  date: "10/06/2025", statut: "en_attente",
-    lignes: [{ artId: "ART-01", qte: 2 }, { artId: "ART-03", qte: 1 }, { artId: "ART-04", qte: 1 }] },
-  { id: "CMD-046", client: "Thomas Bernard",  date: "10/06/2025", statut: "en_attente",
-    lignes: [{ artId: "ART-05", qte: 3 }, { artId: "ART-06", qte: 2 }] },
-  { id: "CMD-048", client: "Paul Mercier",    date: "11/06/2025", statut: "en_attente",
-    lignes: [{ artId: "ART-02", qte: 5 }] },
-  { id: "CMD-049", client: "Julie Renard",    date: "11/06/2025", statut: "en_attente",
-    lignes: [{ artId: "ART-07", qte: 2 }, { artId: "ART-08", qte: 1 }] },
-  { id: "CMD-050", client: "Ahmed Benali",    date: "12/06/2025", statut: "en_attente",
-    lignes: [{ artId: "ART-10", qte: 1 }, { artId: "ART-09", qte: 2 }] },
-  { id: "CMD-044", client: "Sophie Durand",   date: "09/06/2025", statut: "livree",
-    lignes: [{ artId: "ART-02", qte: 5 }, { artId: "ART-08", qte: 2 }] },
-  { id: "CMD-043", client: "Lucas Petit",     date: "09/06/2025", statut: "annulee",
-    lignes: [{ artId: "ART-01", qte: 4 }] },
-  { id: "CMD-042", client: "Claire Morin",    date: "08/06/2025", statut: "livree",
-    lignes: [{ artId: "ART-05", qte: 2 }, { artId: "ART-06", qte: 3 }] },
-];
+const INITIAL_COMMANDES = [];
 
-const INITIAL_HISTORIQUE = [
-  { id: 1, date: "09/06/2025 14:22", artId: "ART-02", artNom: "Riz basmati",      type: "sortie", qte: 5,  motif: "Livraison CMD-044", prixUnit: 2.20 },
-  { id: 2, date: "09/06/2025 14:22", artId: "ART-08", artNom: "Lentilles vertes", type: "sortie", qte: 2,  motif: "Livraison CMD-044", prixUnit: 2.50 },
-  { id: 3, date: "08/06/2025 10:05", artId: "ART-05", artNom: "Pâtes rigatoni",   type: "sortie", qte: 2,  motif: "Livraison CMD-042", prixUnit: 1.90 },
-  { id: 4, date: "07/06/2025 09:00", artId: "ART-01", artNom: "Farine T65",       type: "entree", qte: 20, motif: "Réapprovisionnement",  prixUnit: 0    },
-];
+const INITIAL_HISTORIQUE = [];
 
 // ── Utilitaires ───────────────────────────────────────────────────────────────
 const stockStatus = (art) => {
@@ -1198,10 +1165,13 @@ export default function App() {
     setHistorique(prev => [...prev, ...newEntries]);
     cmd.lignes.forEach(l => {
       const art = articles.find(a => a.id === l.artId);
-      if (art) supabase.from("articles").update({ stock: Math.max(0, art.stock - l.qte) }).eq("id", l.artId);
+      if (art) supabase.from("articles").update({ stock: Math.max(0, art.stock - l.qte) }).eq("id", l.artId)
+        .then(({ error }) => { if (error) console.error("UPDATE stock livraison:", error.message); });
     });
-    supabase.from("commandes").update({ statut: "livree" }).eq("id", cmdId);
-    supabase.from("historique").insert(newEntries.map(histToDb));
+    supabase.from("commandes").update({ statut: "livree" }).eq("id", cmdId)
+      .then(({ error }) => { if (error) console.error("UPDATE commande statut:", error.message); });
+    supabase.from("historique").insert(newEntries.map(histToDb))
+      .then(({ error }) => { if (error) console.error("INSERT historique livraison:", error.message); });
     showToast(`✓ ${cmd.client} — commande livrée !`);
     setScreen("commandes");
   };
@@ -1217,14 +1187,17 @@ export default function App() {
       prixUnit: type === "sortie" ? (art?.prix || 0) : 0,
     }]);
     const newStock = type === "entree" ? art.stock + qte : Math.max(0, art.stock - qte);
-    supabase.from("articles").update({ stock: newStock }).eq("id", artId);
-    supabase.from("historique").insert([histToDb({ date: now(), artId, artNom: art?.nom || artId, type, qte, motif, prixUnit: type === "sortie" ? (art?.prix || 0) : 0 })]);
+    supabase.from("articles").update({ stock: newStock }).eq("id", artId)
+      .then(({ error }) => { if (error) console.error("UPDATE stock mouvement:", error.message); });
+    supabase.from("historique").insert([histToDb({ date: now(), artId, artNom: art?.nom || artId, type, qte, motif, prixUnit: type === "sortie" ? (art?.prix || 0) : 0 })])
+      .then(({ error }) => { if (error) console.error("INSERT historique mouvement:", error.message); });
     showToast(type === "entree" ? `+${qte} ${art?.unite} ajoutés` : `−${qte} ${art?.unite} retirés`);
   };
 
   const handleImport = (cmds) => {
     setCommandes(prev => [...cmds, ...prev]);
-    supabase.from("commandes").insert(cmds);
+    supabase.from("commandes").insert(cmds)
+      .then(({ error }) => { if (error) console.error("INSERT commandes import:", error.message); });
     showToast(`${cmds.length} commande${cmds.length > 1 ? "s" : ""} importée${cmds.length > 1 ? "s" : ""} ✓`);
     setScreen("commandes");
   };
@@ -1252,9 +1225,11 @@ export default function App() {
     setHistorique(prev => [...prev, ...newEntries]);
     lignes.forEach(l => {
       const art = articles.find(a => a.id === l.artId);
-      if (art) supabase.from("articles").update({ stock: Math.max(0, art.stock - l.qte) }).eq("id", l.artId);
+      if (art) supabase.from("articles").update({ stock: Math.max(0, art.stock - l.qte) }).eq("id", l.artId)
+        .then(({ error }) => { if (error) console.error("UPDATE stock vente:", error.message); });
     });
-    supabase.from("historique").insert(newEntries.map(histToDb));
+    supabase.from("historique").insert(newEntries.map(histToDb))
+      .then(({ error }) => { if (error) console.error("INSERT historique vente:", error.message); });
     const total = lignes.reduce((s, l) => s + l.qte, 0);
     showToast(`✓ Vente enregistrée — ${total} article${total > 1 ? "s" : ""}`);
     setScreen("dashboard");

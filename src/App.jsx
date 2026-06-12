@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { supabase } from "./supabase";
 
 // ── Données initiales ─────────────────────────────────────────────────────────
 const INITIAL_ARTICLES = [
@@ -49,6 +50,8 @@ const stockStatus = (art) => {
 
 const today = () => new Date().toLocaleDateString("fr-FR");
 const now = () => new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const histToDb = (h) => ({ date: h.date, art_id: h.artId, art_nom: h.artNom, type: h.type, qte: h.qte, motif: h.motif, prix_unit: h.prixUnit || 0 });
+const dbToHist = (h) => ({ id: h.id, date: h.date, artId: h.art_id, artNom: h.art_nom, type: h.type, qte: h.qte, motif: h.motif, prixUnit: h.prix_unit || 0 });
 const fmtEur = (n) => Number(n || 0).toFixed(2).replace(".", ",") + " €";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -1097,9 +1100,34 @@ function NouvelArticle({ articles, onCreer }) {
 //  APP PRINCIPALE
 // ══════════════════════════════════════════════════════════════════════════════
 export default function App() {
-  const [articles, setArticles] = useState(INITIAL_ARTICLES);
-  const [commandes, setCommandes] = useState(INITIAL_COMMANDES);
-  const [historique, setHistorique] = useState(INITIAL_HISTORIQUE);
+  const [articles, setArticles] = useState([]);
+  const [commandes, setCommandes] = useState([]);
+  const [historique, setHistorique] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: arts }, { data: cmds }, { data: hist }] = await Promise.all([
+        supabase.from("articles").select("*").order("id"),
+        supabase.from("commandes").select("*"),
+        supabase.from("historique").select("*").order("id", { ascending: false }),
+      ]);
+      if (!arts?.length) {
+        await supabase.from("articles").insert(INITIAL_ARTICLES);
+        setArticles(INITIAL_ARTICLES);
+      } else setArticles(arts);
+      if (!cmds?.length) {
+        await supabase.from("commandes").insert(INITIAL_COMMANDES);
+        setCommandes(INITIAL_COMMANDES);
+      } else setCommandes(cmds);
+      if (hist?.length) setHistorique(hist.map(dbToHist));
+      else if (INITIAL_HISTORIQUE.length) {
+        await supabase.from("historique").insert(INITIAL_HISTORIQUE.map(histToDb));
+        setHistorique(INITIAL_HISTORIQUE);
+      }
+      setLoading(false);
+    })();
+  }, []);
   const [screen, setScreen] = useState("dashboard");
   const [selectedCmd, setSelectedCmd] = useState(null);
   const [selectedArt, setSelectedArt] = useState(null);
@@ -1125,6 +1153,12 @@ export default function App() {
         artNom: art?.nom || l.artId, type: "sortie", qte: l.qte, motif: `Livraison ${cmdId}`, prixUnit: art?.prix || 0 };
     });
     setHistorique(prev => [...prev, ...newEntries]);
+    cmd.lignes.forEach(l => {
+      const art = articles.find(a => a.id === l.artId);
+      if (art) supabase.from("articles").update({ stock: Math.max(0, art.stock - l.qte) }).eq("id", l.artId);
+    });
+    supabase.from("commandes").update({ statut: "livree" }).eq("id", cmdId);
+    supabase.from("historique").insert(newEntries.map(histToDb));
     showToast(`✓ ${cmd.client} — commande livrée !`);
     setScreen("commandes");
   };
@@ -1139,11 +1173,15 @@ export default function App() {
       id: Date.now(), date: now(), artId, artNom: art?.nom || artId, type, qte, motif,
       prixUnit: type === "sortie" ? (art?.prix || 0) : 0,
     }]);
+    const newStock = type === "entree" ? art.stock + qte : Math.max(0, art.stock - qte);
+    supabase.from("articles").update({ stock: newStock }).eq("id", artId);
+    supabase.from("historique").insert([histToDb({ date: now(), artId, artNom: art?.nom || artId, type, qte, motif, prixUnit: type === "sortie" ? (art?.prix || 0) : 0 })]);
     showToast(type === "entree" ? `+${qte} ${art?.unite} ajoutés` : `−${qte} ${art?.unite} retirés`);
   };
 
   const handleImport = (cmds) => {
     setCommandes(prev => [...cmds, ...prev]);
+    supabase.from("commandes").insert(cmds);
     showToast(`${cmds.length} commande${cmds.length > 1 ? "s" : ""} importée${cmds.length > 1 ? "s" : ""} ✓`);
     setScreen("commandes");
   };
@@ -1151,6 +1189,7 @@ export default function App() {
   const handleSupprimer = (artId) => {
     const art = articles.find(a => a.id === artId);
     setArticles(prev => prev.filter(a => a.id !== artId));
+    supabase.from("articles").delete().eq("id", artId);
     showToast(`🗑 ${art?.nom || artId} supprimé`);
     setScreen("stock");
   };
@@ -1167,6 +1206,11 @@ export default function App() {
         artNom: art?.nom || l.artId, type: "sortie", qte: l.qte, motif: "Vente directe", prixUnit: art?.prix || 0 };
     });
     setHistorique(prev => [...prev, ...newEntries]);
+    lignes.forEach(l => {
+      const art = articles.find(a => a.id === l.artId);
+      if (art) supabase.from("articles").update({ stock: Math.max(0, art.stock - l.qte) }).eq("id", l.artId);
+    });
+    supabase.from("historique").insert(newEntries.map(histToDb));
     const total = lignes.reduce((s, l) => s + l.qte, 0);
     showToast(`✓ Vente enregistrée — ${total} article${total > 1 ? "s" : ""}`);
     setScreen("dashboard");
@@ -1174,11 +1218,13 @@ export default function App() {
 
   const handleCreateArticle = (article) => {
     setArticles(prev => [...prev, article]);
+    supabase.from("articles").insert([article]);
     if (article.stock > 0) {
       setHistorique(prev => [...prev, {
         id: Date.now(), date: now(), artId: article.id,
         artNom: article.nom, type: "entree", qte: article.stock, motif: "Stock initial",
       }]);
+      supabase.from("historique").insert([histToDb({ date: now(), artId: article.id, artNom: article.nom, type: "entree", qte: article.stock, motif: "Stock initial", prixUnit: 0 })]);
     }
     showToast(`✓ ${article.nom} ajouté au catalogue`);
     setScreen("stock");
@@ -1265,6 +1311,14 @@ export default function App() {
 
         {/* Contenu de l'écran */}
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          {loading && (
+            <div style={{ position: "absolute", inset: 0, background: css.bg, zIndex: 20,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexDirection: "column", gap: 16 }}>
+              <div style={{ fontSize: 44 }}>📦</div>
+              <div style={{ fontSize: 14, color: css.inkSoft, fontWeight: 600 }}>Connexion à la base de données…</div>
+            </div>
+          )}
           {screen === "dashboard" && (
             <Dashboard articles={articles} commandes={commandes}
               setScreen={setScreen} setSelectedCmd={setSelectedCmd} />

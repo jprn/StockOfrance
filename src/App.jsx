@@ -718,7 +718,12 @@ function ImportCSV({ onImport }) {
 function SalesChart({ historique }) {
   const sorties = historique.filter(h => h.type === "sortie");
   if (sorties.length === 0) {
-    return <div style={{ textAlign: "center", color: css.inkGhost, padding: "24px 0", fontSize: 13 }}>Aucune vente enregistrée</div>;
+    return (
+      <div style={{ textAlign: "center", color: css.inkGhost, padding: "32px 0", fontSize: 13 }}>
+        <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
+        Aucune vente enregistrée
+      </div>
+    );
   }
 
   const getDay = (d) => d.split(" ")[0];
@@ -728,56 +733,72 @@ function SalesChart({ historique }) {
   };
 
   const byDay = {};
+  const caByDay = {};
   sorties.forEach(h => {
     const day = getDay(h.date);
-    byDay[day] = (byDay[day] || 0) + h.qte;
+    byDay[day]   = (byDay[day]   || 0) + h.qte;
+    caByDay[day] = (caByDay[day] || 0) + h.qte * (h.prixUnit || 0);
   });
 
-  const days = Object.keys(byDay).sort((a, b) => sortKey(a) - sortKey(b)).slice(-7);
-  const values = days.map(d => byDay[d]);
-  const maxVal = Math.max(...values, 1);
-  const total = values.reduce((s, v) => s + v, 0);
-  const totalCA = sorties.filter(h => days.includes(getDay(h.date)))
-    .reduce((s, h) => s + h.qte * (h.prixUnit || 0), 0);
+  const days    = Object.keys(byDay).sort((a, b) => sortKey(a) - sortKey(b)).slice(-7);
+  const values  = days.map(d => byDay[d]);
+  const caValues = days.map(d => caByDay[d] || 0);
+  const maxVal  = Math.max(...values, 1);
+  const total   = values.reduce((s, v) => s + v, 0);
+  const totalCA = caValues.reduce((s, v) => s + v, 0);
 
-  const barW = 34;
-  const gap = 8;
-  const chartH = 90;
-  const chartW = days.length * (barW + gap);
+  const CHART_H = 110;
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
+      {/* KPIs */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
+        background: css.primaryLt, borderRadius: 14, padding: "12px 16px", marginBottom: 18 }}>
         <div>
-          <span style={{ fontSize: 26, fontWeight: 800, color: css.danger }}>{total}</span>
-          <span style={{ fontSize: 12, color: css.inkSoft, marginLeft: 5 }}>unités</span>
+          <div style={{ fontSize: 28, fontWeight: 800, color: css.primary, lineHeight: 1 }}>{total}</div>
+          <div style={{ fontSize: 11, color: css.inkSoft, marginTop: 3 }}>unités vendues</div>
         </div>
+        <div style={{ width: 1, height: 40, background: css.border }} />
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: css.primary }}>{fmtEur(totalCA)}</div>
-          <div style={{ fontSize: 10, color: css.inkGhost }}>chiffre d'affaires</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: css.primary, lineHeight: 1 }}>{fmtEur(totalCA)}</div>
+          <div style={{ fontSize: 11, color: css.inkSoft, marginTop: 3 }}>chiffre d'affaires</div>
         </div>
       </div>
-      <svg width="100%" viewBox={`0 0 ${chartW} ${chartH + 28}`} style={{ overflow: "visible" }}>
-        <line x1={0} y1={chartH} x2={chartW} y2={chartH} stroke={css.border} strokeWidth="1" />
+
+      {/* Barres */}
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 8,
+        overflowX: "auto", paddingBottom: 2 }}>
         {days.map((day, i) => {
-          const v = values[i];
-          const barH = Math.max(3, (v / maxVal) * chartH);
-          const x = i * (barW + gap);
+          const v    = values[i];
+          const ca   = caValues[i];
           const isMax = v === maxVal;
+          const barH  = Math.max(8, Math.round((v / maxVal) * CHART_H));
           return (
-            <g key={day}>
-              <rect x={x} y={chartH - barH} width={barW} height={barH}
-                fill={isMax ? css.danger : "#FDEAEA"}
-                stroke={isMax ? css.danger : "#F5AAAA"}
-                strokeWidth="1" rx="5" />
-              <text x={x + barW / 2} y={chartH - barH - 5} textAnchor="middle"
-                fontSize="11" fill={css.ink} fontWeight="700">{v}</text>
-              <text x={x + barW / 2} y={chartH + 16} textAnchor="middle"
-                fontSize="9" fill={css.inkGhost}>{day.substring(0, 5)}</text>
-            </g>
+            <div key={day} style={{ display: "flex", flexDirection: "column",
+              alignItems: "center", gap: 4, flex: "0 0 auto", width: 54 }}>
+              <div style={{ fontSize: 12, fontWeight: 800,
+                color: isMax ? css.primary : css.inkSoft }}>{v}</div>
+              <div style={{ width: 36, height: CHART_H,
+                display: "flex", alignItems: "flex-end" }}>
+                <div style={{
+                  width: "100%", height: barH,
+                  background: isMax
+                    ? `linear-gradient(180deg, ${css.primary} 0%, #7B8FFF 100%)`
+                    : `linear-gradient(180deg, #A5B4FC 0%, #C7D2FE 100%)`,
+                  borderRadius: "6px 6px 3px 3px",
+                  boxShadow: isMax ? `0 3px 10px ${css.primary}55` : "none",
+                }} />
+              </div>
+              <div style={{ fontSize: 10, color: css.inkGhost, fontWeight: 600,
+                whiteSpace: "nowrap" }}>{day.substring(0, 5)}</div>
+              <div style={{ fontSize: 9, fontWeight: 700,
+                color: ca > 0 ? css.primary : css.inkGhost }}>
+                {ca > 0 ? fmtEur(ca) : "—"}
+              </div>
+            </div>
           );
         })}
-      </svg>
+      </div>
     </div>
   );
 }

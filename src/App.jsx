@@ -1211,7 +1211,8 @@ export default function App() {
   const handleSupprimer = (artId) => {
     const art = articles.find(a => a.id === artId);
     setArticles(prev => prev.filter(a => a.id !== artId));
-    supabase.from("articles").delete().eq("id", artId);
+    supabase.from("articles").delete().eq("id", artId)
+      .then(({ error }) => { if (error) console.error("DELETE article:", error.message); });
     showToast(`🗑 ${art?.nom || artId} supprimé`);
     setScreen("stock");
   };
@@ -1240,13 +1241,15 @@ export default function App() {
 
   const handleCreateArticle = (article) => {
     setArticles(prev => [...prev, article]);
-    supabase.from("articles").insert([article]);
+    supabase.from("articles").insert([article])
+      .then(({ error }) => { if (error) console.error("INSERT article:", error.message); });
     if (article.stock > 0) {
       setHistorique(prev => [...prev, {
         id: Date.now(), date: now(), artId: article.id,
         artNom: article.nom, type: "entree", qte: article.stock, motif: "Stock initial",
       }]);
-      supabase.from("historique").insert([histToDb({ date: now(), artId: article.id, artNom: article.nom, type: "entree", qte: article.stock, motif: "Stock initial", prixUnit: 0 })]);
+      supabase.from("historique").insert([histToDb({ date: now(), artId: article.id, artNom: article.nom, type: "entree", qte: article.stock, motif: "Stock initial", prixUnit: 0 })])
+        .then(({ error }) => { if (error) console.error("INSERT historique:", error.message); });
     }
     showToast(`✓ ${article.nom} ajouté au catalogue`);
     setScreen("stock");

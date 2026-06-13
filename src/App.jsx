@@ -1362,12 +1362,16 @@ export default function App() {
         .toast-fixed { bottom: 90px; }
         .hide-on-desktop { }
         .show-on-desktop { display: none; }
+        .centered-title {
+          position: absolute; left: 50%; transform: translateX(-50%);
+          pointer-events: none;
+        }
         .mobile-bg-logo {
           display: block;
           position: fixed; top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           width: 88vw; max-width: 340px;
-          opacity: 0.045; pointer-events: none; z-index: 0;
+          opacity: 0.10; pointer-events: none; z-index: 0;
         }
         @media (min-width: 768px) {
           .hide-on-desktop { display: none; }
@@ -1433,7 +1437,8 @@ export default function App() {
         {/* Header */}
         <div style={{ background: css.surface, padding: "13px 20px",
           borderBottom: `1px solid ${css.border}`, display: "flex",
-          justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          justifyContent: "space-between", alignItems: "center", flexShrink: 0,
+          position: "relative" }}>
           {/* Gauche : logo ou titre retour */}
           <div onClick={isBack ? () => setScreen(meta.back || "dashboard") : undefined}
             style={{ cursor: isBack ? "pointer" : "default" }}>
@@ -1447,22 +1452,17 @@ export default function App() {
                 </div>
               </>
             ) : (
-              <>
-                <img src="/logo.png" alt="O'France"
-                  className="hide-on-desktop"
-                  style={{ height: 30, objectFit: "contain" }} />
-                <span className="show-on-desktop"
-                  style={{ fontSize: 22, fontWeight: 900, color: css.primary, letterSpacing: -0.5 }}>
-                  O'FRANCE 2026
-                </span>
-              </>
+              <span className="centered-title"
+                style={{ fontSize: 20, fontWeight: 900, color: css.primary, letterSpacing: -0.5, whiteSpace: "nowrap" }}>
+                O'FRANCE 2026
+              </span>
             )}
           </div>
 
           {/* Droite : date (mobile seulement) + bouton action */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {!isBack && (
-              <span style={{
+              <span className="hide-on-desktop" style={{
                 fontSize: 18, fontWeight: 800, color: css.primary,
                 letterSpacing: -0.5, lineHeight: 1,
                 background: css.primaryLt, padding: "5px 12px",

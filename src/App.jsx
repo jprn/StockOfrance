@@ -1420,31 +1420,44 @@ export default function App() {
         <div style={{ background: css.surface, padding: "13px 20px",
           borderBottom: `1px solid ${css.border}`, display: "flex",
           justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          {/* Gauche : logo ou titre retour */}
           <div onClick={isBack ? () => setScreen(meta.back || "dashboard") : undefined}
             style={{ cursor: isBack ? "pointer" : "default" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {!isBack && <img src="/logo.png" alt="O'France" style={{ height: 30, objectFit: "contain" }} />}
-              <span style={{ fontSize: 20, fontWeight: 700, color: isBack ? css.primary : css.ink }}>
-                {isBack ? meta.title : ""}
-              </span>
-            </div>
-            <div style={{ fontSize: 13, color: css.inkSoft, marginTop: 1 }}
-              className={!isBack ? "hide-on-desktop" : ""}>
-              {isBack
-                ? screen === "detail_commande" ? commandes.find(c => c.id === selectedCmd)?.client
-                : screen === "detail_article"  ? articles.find(a => a.id === selectedArt)?.nom
-                : meta.sub
-                : meta.sub}
-            </div>
+            {isBack ? (
+              <>
+                <div style={{ fontSize: 20, fontWeight: 700, color: css.primary }}>{meta.title}</div>
+                <div style={{ fontSize: 13, color: css.inkSoft, marginTop: 1 }}>
+                  {screen === "detail_commande" ? commandes.find(c => c.id === selectedCmd)?.client
+                  : screen === "detail_article" ? articles.find(a => a.id === selectedArt)?.nom
+                  : meta.sub}
+                </div>
+              </>
+            ) : (
+              <img src="/logo.png" alt="O'France" style={{ height: 30, objectFit: "contain" }} />
+            )}
           </div>
-          {meta.action && (
-            <div onClick={() => setScreen(meta.action.screen)}
-              style={{ width: 38, height: 38, background: css.primaryLt, borderRadius: "50%",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 18, cursor: "pointer" }}>
-              {meta.action.icon}
-            </div>
-          )}
+
+          {/* Droite : date (mobile seulement) + bouton action */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {!isBack && (
+              <span className="hide-on-desktop" style={{
+                fontSize: 18, fontWeight: 800, color: css.primary,
+                letterSpacing: -0.5, lineHeight: 1,
+                background: css.primaryLt, padding: "5px 12px",
+                borderRadius: 10,
+              }}>
+                {meta.sub}
+              </span>
+            )}
+            {meta.action && (
+              <div onClick={() => setScreen(meta.action.screen)}
+                style={{ width: 38, height: 38, background: css.primaryLt, borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 18, cursor: "pointer" }}>
+                {meta.action.icon}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Bannière erreur DB */}

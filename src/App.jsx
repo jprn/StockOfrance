@@ -72,7 +72,7 @@ function StockBar({ art }) {
 
 function Toast({ msg }) {
   return (
-    <div style={{ position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
+    <div className="toast-fixed" style={{ position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
       background: css.ink, color: "#fff", padding: "12px 20px", borderRadius: 12, fontSize: 14,
       fontWeight: 600, zIndex: 999, boxShadow: "0 8px 24px rgba(0,0,0,.25)", maxWidth: 320,
       textAlign: "center", animation: "fadeup .25s ease" }}>
@@ -890,6 +890,7 @@ function Historique({ historique }) {
 function VenteDirecte({ articles, onVente }) {
   const [search, setSearch] = useState("");
   const [panier, setPanier] = useState({});
+  const [client, setClient] = useState("");
 
   const filtered = useMemo(() => articles.filter(a =>
     !search || a.nom.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase())
@@ -977,7 +978,12 @@ function VenteDirecte({ articles, onVente }) {
                 }, 0))}
               </span>
             </div>
-            <Btn onClick={() => onVente(Object.entries(panier).map(([artId, qte]) => ({ artId, qte })))}
+            <input value={client} onChange={e => setClient(e.target.value)}
+              placeholder="Nom du client (optionnel)"
+              style={{ display: "block", width: "100%", padding: "9px 14px", marginBottom: 8,
+                border: `1.5px solid ${css.border}`, borderRadius: 10, fontSize: 14,
+                outline: "none", color: css.ink, boxSizing: "border-box" }} />
+            <Btn onClick={() => onVente(Object.entries(panier).map(([artId, qte]) => ({ artId, qte })), client.trim() || "Vente directe")}
               variant="success" style={{ height: 46 }}>
               ✓ Valider la vente — {totalItems} article{totalItems > 1 ? "s" : ""}
             </Btn>
@@ -1211,7 +1217,17 @@ export default function App() {
     setScreen("stock");
   };
 
-  const handleVente = (lignes) => {
+  const handleVente = (lignes, client = "Vente directe") => {
+    const maxNum = commandes
+      .map(c => parseInt(c.id.replace("CMD-", "")) || 0)
+      .reduce((max, n) => Math.max(max, n), 0);
+    const cmdId = `CMD-${String(maxNum + 1).padStart(3, "0")}`;
+    const cmd = { id: cmdId, client, date: today(), statut: "livree", lignes };
+
+    setCommandes(prev => [cmd, ...prev]);
+    supabase.from("commandes").insert([cmd])
+      .then(({ error }) => { if (error) console.error("INSERT commande vente:", error.message); });
+
     setArticles(prev => prev.map(art => {
       const ligne = lignes.find(l => l.artId === art.id);
       if (!ligne) return art;
@@ -1220,7 +1236,7 @@ export default function App() {
     const newEntries = lignes.map((l, i) => {
       const art = articles.find(a => a.id === l.artId);
       return { id: Date.now() + i, date: now(), artId: l.artId,
-        artNom: art?.nom || l.artId, type: "sortie", qte: l.qte, motif: "Vente directe", prixUnit: art?.prix || 0 };
+        artNom: art?.nom || l.artId, type: "sortie", qte: l.qte, motif: `Vente ${cmdId}`, prixUnit: art?.prix || 0 };
     });
     setHistorique(prev => [...prev, ...newEntries]);
     lignes.forEach(l => {
@@ -1231,8 +1247,8 @@ export default function App() {
     supabase.from("historique").insert(newEntries.map(histToDb))
       .then(({ error }) => { if (error) console.error("INSERT historique vente:", error.message); });
     const total = lignes.reduce((s, l) => s + l.qte, 0);
-    showToast(`✓ Vente enregistrée — ${total} article${total > 1 ? "s" : ""}`);
-    setScreen("dashboard");
+    showToast(`✓ ${cmdId} — ${client} — ${total} article${total > 1 ? "s" : ""}`);
+    setScreen("commandes");
   };
 
   const handleCreateArticle = (article) => {
@@ -1274,7 +1290,7 @@ export default function App() {
   const isBack = ["detail_commande", "detail_article", "import", "historique", "nouvel_article", "vente_directe"].includes(screen);
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", minHeight: "100vh", background: "#D8D8E8",
+    <div className="app-outer" style={{ display: "flex", justifyContent: "center", minHeight: "100vh", background: "#D8D8E8",
       padding: "24px 0", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -1284,14 +1300,38 @@ export default function App() {
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
         ::-webkit-scrollbar { display: none; }
+        html, body, #root { height: 100%; }
+        @media (max-width: 520px) {
+          .app-outer {
+            padding: 0 !important;
+            background: #F0F0F8 !important;
+            display: block !important;
+            min-height: 100vh;
+            min-height: 100dvh;
+          }
+          .app-shell {
+            width: 100% !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+          .status-bar-mock { display: none !important; }
+          .nav-bar {
+            padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px) !important;
+          }
+          .toast-fixed {
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+          }
+        }
       `}</style>
 
-      <div style={{ width: 375, background: css.bg, borderRadius: 40,
+      <div className="app-shell" style={{ width: 375, background: css.bg, borderRadius: 40,
         boxShadow: "0 24px 60px rgba(0,0,0,.22), 0 0 0 1px rgba(255,255,255,.3)",
         overflow: "hidden", display: "flex", flexDirection: "column", height: 812, position: "relative" }}>
 
         {/* Status bar */}
-        <div style={{ background: css.surface, padding: "14px 20px 10px",
+        <div className="status-bar-mock" style={{ background: css.surface, padding: "14px 20px 10px",
           display: "flex", justifyContent: "space-between", alignItems: "center",
           fontSize: 12, fontWeight: 600, color: css.ink, flexShrink: 0 }}>
           <span>9:41</span>
@@ -1379,7 +1419,7 @@ export default function App() {
         </div>
 
         {/* Barre de navigation */}
-        <div style={{ background: css.surface, borderTop: `1px solid ${css.border}`,
+        <div className="nav-bar" style={{ background: css.surface, borderTop: `1px solid ${css.border}`,
           display: "flex", paddingBottom: 16, flexShrink: 0 }}>
           {navItems.map(item => (
             <div key={item.key} onClick={() => setScreen(item.key)}

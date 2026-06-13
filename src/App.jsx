@@ -49,27 +49,26 @@ function Tag({ status }) {
   );
 }
 
+const stockPct = (art) => {
+  const ref = art.stock_initial > 0 ? art.stock_initial : (art.seuil > 0 ? art.seuil * 2.5 : art.stock || 1);
+  return Math.min(100, Math.round((art.stock / ref) * 100));
+};
+const stockFillColor = (st) => st === "ok" ? css.success : st === "alerte" ? css.warn : css.danger;
+
 function StockBar({ art }) {
   const st = stockStatus(art);
-  const ref = art.stock_initial > 0 ? art.stock_initial : (art.seuil > 0 ? art.seuil * 2.5 : art.stock || 1);
-  const pct = Math.min(100, Math.round((art.stock / ref) * 100));
-  const fillColor = st === "ok" ? css.success : st === "alerte" ? css.warn : css.danger;
   return (
-    <div style={{ marginTop: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: css.inkSoft, marginBottom: 5 }}>
-        <span>
-          <strong style={{ color: st === "rupture" ? css.danger : css.ink, fontSize: 18, fontWeight: 800 }}>
-            {art.stock}
-          </strong>{" "}{art.unite}
-        </span>
-        <span style={{ display: "flex", gap: 8 }}>
-          <span style={{ color: css.inkGhost }}>/{art.stock_initial > 0 ? art.stock_initial : "—"}</span>
-          <span>Seuil : {art.seuil}</span>
-        </span>
-      </div>
-      <div style={{ height: 6, background: css.border, borderRadius: 99, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: fillColor, borderRadius: 99, transition: "width .4s" }} />
-      </div>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
+      fontSize: 12, color: css.inkSoft, marginTop: 10 }}>
+      <span>
+        <strong style={{ color: st === "rupture" ? css.danger : css.ink, fontSize: 18, fontWeight: 800 }}>
+          {art.stock}
+        </strong>{" "}{art.unite}
+        {art.stock_initial > 0 && (
+          <span style={{ color: css.inkGhost, fontWeight: 400 }}> / {art.stock_initial}</span>
+        )}
+      </span>
+      <span style={{ fontSize: 11, color: css.inkGhost }}>Seuil : {art.seuil} {art.unite}</span>
     </div>
   );
 }
@@ -452,20 +451,28 @@ function Stock({ articles, setScreen, setSelectedArt }) {
       </div>
       {filtered.length === 0
         ? <div style={{ textAlign: "center", color: css.inkGhost, fontSize: 14, padding: 32 }}>Aucun article trouvé</div>
-        : filtered.map(art => (
-          <div key={art.id} onClick={() => { setSelectedArt(art.id); setScreen("detail_article"); }}
-            style={{ background: css.surface, borderRadius: 14, padding: 16, marginBottom: 10,
-              boxShadow: "0 1px 4px rgba(0,0,0,.06)", cursor: "pointer" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: css.ink }}>{art.nom}</div>
-                <div style={{ fontSize: 12, color: css.inkGhost, marginTop: 2 }}>{art.id}</div>
+        : filtered.map(art => {
+          const st  = stockStatus(art);
+          const pct = stockPct(art);
+          const col = stockFillColor(st);
+          return (
+            <div key={art.id} onClick={() => { setSelectedArt(art.id); setScreen("detail_article"); }}
+              style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden",
+                boxShadow: "0 1px 4px rgba(0,0,0,.06)", cursor: "pointer", position: "relative",
+                background: `linear-gradient(to right, ${col}28 ${pct}%, ${css.surface} ${pct}%)` }}>
+              <div style={{ padding: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: css.ink }}>{art.nom}</div>
+                    <div style={{ fontSize: 12, color: css.inkGhost, marginTop: 2 }}>{art.id}</div>
+                  </div>
+                  <Tag status={st} />
+                </div>
+                <StockBar art={art} />
               </div>
-              <Tag status={stockStatus(art)} />
             </div>
-            <StockBar art={art} />
-          </div>
-        ))
+          );
+        })
       }
     </div>
   );

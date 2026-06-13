@@ -604,37 +604,47 @@ function DetailArticle({ artId, articles, historique, onMouvement, onSupprimer }
 function ImportCSV({ onImport }) {
   const [text, setText] = useState("");
   const [preview, setPreview] = useState([]);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState([]);
+
+  const normDate = (raw) => {
+    if (!raw) return today();
+    const parts = raw.trim().split("/");
+    if (parts.length !== 3) return raw.trim();
+    const [d, m, y] = parts;
+    const year = y.length === 2 ? `20${y}` : y;
+    return `${d.padStart(2,"0")}/${m.padStart(2,"0")}/${year}`;
+  };
 
   const parseCSV = (raw) => {
-    setError("");
+    setErrors([]);
     const lines = raw.trim().split("\n").filter(l => l.trim());
     if (lines.length === 0) { setPreview([]); return; }
-    const skip = lines[0].toLowerCase().includes("numero") || lines[0].toLowerCase().includes("cmd");
+    const firstLow = lines[0].toLowerCase();
+    const skip = firstLow.includes("num") || firstLow.includes("commande") || firstLow.includes("nom") || firstLow.includes("article");
     const dataLines = skip ? lines.slice(1) : lines;
     const grouped = {};
     const errs = [];
     dataLines.forEach((line, i) => {
       const parts = line.split(",").map(p => p.trim());
-      if (parts.length < 5) { errs.push(`Ligne ${i + 2}: format invalide`); return; }
-      const [num, client, artId, artNom, qte] = parts;
-      const q = parseInt(qte);
-      if (!num || !client || !artId || isNaN(q)) { errs.push(`Ligne ${i + 2}: données manquantes`); return; }
-      if (!grouped[num]) grouped[num] = { id: num.startsWith("CMD") ? num : `CMD-${num}`, client, date: today(), statut: "en_attente", lignes: [], _artNoms: [] };
+      if (parts.length < 5) { errs.push(`Ligne ${skip ? i + 2 : i + 1}: moins de 5 colonnes`); return; }
+      const [num, client, artId, artNom, qteRaw, dateRaw] = parts;
+      const q = parseInt(qteRaw);
+      if (!num || !client || !artId || isNaN(q)) { errs.push(`Ligne ${skip ? i + 2 : i + 1}: données manquantes`); return; }
+      if (!grouped[num]) grouped[num] = { id: num, client, date: normDate(dateRaw), statut: "en_attente", lignes: [], _artNoms: [] };
       grouped[num].lignes.push({ artId, qte: q });
       grouped[num]._artNoms.push(artNom);
     });
-    if (errs.length) setError(errs.join(" | "));
+    if (errs.length) setErrors(errs);
     setPreview(Object.values(grouped));
   };
 
   return (
     <div className="screen-pad" style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
-      <div style={{ background: css.warnLt, borderRadius: 12, padding: "12px 14px", marginBottom: 14,
-        fontSize: 12, color: css.warn, fontWeight: 600 }}>
-        Format CSV attendu :<br />
-        <span style={{ fontFamily: "monospace", fontWeight: 400 }}>
-          numero, client, ref_article, nom_article, quantite
+      <div style={{ background: css.primaryLt, borderRadius: 12, padding: "12px 14px", marginBottom: 14,
+        fontSize: 12, color: css.primary, fontWeight: 600, lineHeight: 1.7 }}>
+        Format attendu (avec ou sans en-tête) :<br />
+        <span style={{ fontFamily: "monospace", fontWeight: 400, fontSize: 11 }}>
+          Num commande, Nom, id art, article, quantité, datecommande
         </span>
       </div>
 
@@ -642,11 +652,15 @@ function ImportCSV({ onImport }) {
         boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: css.inkGhost, marginBottom: 8 }}>COLLER LE CONTENU CSV</div>
         <textarea value={text} onChange={e => { setText(e.target.value); parseCSV(e.target.value); }}
-          placeholder={"CMD-051, Jean Martin, ART-01, Farine T65, 3\nCMD-051, Jean Martin, ART-02, Riz basmati, 2"}
-          style={{ width: "100%", height: 120, border: `1.5px solid ${css.border}`, borderRadius: 10,
+          placeholder={"OF48226270JC9O,Maëlle COTENCEAU,ART-2,Maillot XL,1,17/05/26\nOF48226270JC9O,Maëlle COTENCEAU,ART-5,Maillot S,2,17/05/26"}
+          style={{ width: "100%", height: 130, border: `1.5px solid ${css.border}`, borderRadius: 10,
             padding: "10px 12px", fontSize: 12, fontFamily: "monospace", resize: "vertical",
             outline: "none", color: css.ink }} />
-        {error && <div style={{ fontSize: 12, color: css.danger, marginTop: 6 }}>⚠ {error}</div>}
+        {errors.length > 0 && (
+          <div style={{ fontSize: 12, color: css.danger, marginTop: 6 }}>
+            {errors.map((e, i) => <div key={i}>⚠ {e}</div>)}
+          </div>
+        )}
       </div>
 
       {preview.length > 0 && (
@@ -655,28 +669,25 @@ function ImportCSV({ onImport }) {
           {preview.map(cmd => (
             <div key={cmd.id} style={{ background: css.surface, borderRadius: 14, padding: 14,
               marginBottom: 8, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: css.primary }}>{cmd.id}</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: css.ink }}>{cmd.client}</div>
-              <div style={{ fontSize: 12, color: css.inkSoft, marginTop: 4 }}>
-                {cmd.lignes.map((l, i) => `${cmd._artNoms[i]} × ${l.qte}`).join(" · ")}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: css.primary, wordBreak: "break-all" }}>{cmd.id}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: css.ink, marginTop: 2 }}>{cmd.client}</div>
+                </div>
+                <div style={{ fontSize: 11, color: css.inkGhost, flexShrink: 0, marginLeft: 8, marginTop: 2 }}>{cmd.date}</div>
+              </div>
+              <div style={{ fontSize: 12, color: css.inkSoft, marginTop: 6 }}>
+                {cmd.lignes.map((l, i) => (
+                  <div key={i}>{cmd._artNoms[i]} <span style={{ color: css.ink, fontWeight: 700 }}>× {l.qte}</span> <span style={{ color: css.inkGhost }}>({l.artId})</span></div>
+                ))}
               </div>
             </div>
           ))}
-          <Btn onClick={() => { onImport(preview); setText(""); setPreview([]); }} variant="primary">
-            Importer {preview.length} commande{preview.length > 1 ? "s" : ""}
+          <Btn onClick={() => { onImport(preview); setText(""); setPreview([]); setErrors([]); }} variant="primary">
+            Importer {preview.length} commande{preview.length > 1 ? "s" : ""} dans Supabase
           </Btn>
         </>
       )}
-
-      <div style={{ marginTop: 16 }}>
-        <SectionTitle>Exemple à copier-coller</SectionTitle>
-        <div style={{ background: "#1A1A2E", borderRadius: 12, padding: "12px 14px", fontSize: 11,
-          fontFamily: "monospace", color: "#A8E6CF", lineHeight: 1.8 }}>
-          CMD-051, Jean Martin, ART-01, Farine T65, 3<br />
-          CMD-051, Jean Martin, ART-02, Riz basmati, 2<br />
-          CMD-052, Claire Petit, ART-05, Pâtes, 4
-        </div>
-      </div>
     </div>
   );
 }

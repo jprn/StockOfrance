@@ -1322,13 +1322,13 @@ export default function App() {
           flex-shrink: 0;
         }
         .toast-fixed { bottom: 90px; }
-        @media (min-width: 1024px) {
+        @media (min-width: 768px) {
           .app-sidebar {
             display: flex; flex-direction: column;
-            width: 220px; min-width: 220px;
+            width: 200px; min-width: 200px;
             background: #FFFFFF;
             border-right: 1px solid #E2E2EF;
-            padding: 20px 12px 16px;
+            padding: 20px 10px 16px;
             gap: 2px;
             overflow-y: auto;
             flex-shrink: 0;
@@ -1336,6 +1336,9 @@ export default function App() {
           .app-nav-mobile { display: none; }
           .screen-pad { padding-bottom: 32px !important; }
           .toast-fixed { bottom: 32px; }
+        }
+        @media (min-width: 1200px) {
+          .app-sidebar { width: 240px; min-width: 240px; padding: 24px 14px 20px; }
         }
       `}</style>
 

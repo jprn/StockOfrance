@@ -190,13 +190,17 @@ function Dashboard({ articles, commandes, setScreen, setSelectedCmd }) {
         ))}
       </div>
 
-      <SectionTitle>Commandes en attente</SectionTitle>
+      <SectionTitle>Commandes en attente{attente.length > 0 && <span style={{ fontWeight: 400, color: css.inkGhost, marginLeft: 6 }}>({attente.length})</span>}</SectionTitle>
       {attente.length === 0
         ? <div style={{ textAlign: "center", color: css.inkGhost, fontSize: 14, padding: 24 }}>Aucune commande en attente 🎉</div>
-        : attente.slice(0, 3).map(cmd => (
-          <OrderCard key={cmd.id} cmd={cmd} articles={articles}
-            onClick={() => { setSelectedCmd(cmd.id); setScreen("detail_commande"); }} />
-        ))
+        : (
+          <div style={{ maxHeight: 340, overflowY: "auto", paddingRight: 2 }}>
+            {attente.map(cmd => (
+              <OrderCard key={cmd.id} cmd={cmd} articles={articles}
+                onClick={() => { setSelectedCmd(cmd.id); setScreen("detail_commande"); }} />
+            ))}
+          </div>
+        )
       }
     </div>
   );

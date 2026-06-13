@@ -51,7 +51,8 @@ function Tag({ status }) {
 
 function StockBar({ art }) {
   const st = stockStatus(art);
-  const pct = art.seuil > 0 ? Math.min(100, Math.round((art.stock / (art.seuil * 2.5)) * 100)) : 0;
+  const ref = art.stock_initial > 0 ? art.stock_initial : (art.seuil > 0 ? art.seuil * 2.5 : art.stock || 1);
+  const pct = Math.min(100, Math.round((art.stock / ref) * 100));
   const fillColor = st === "ok" ? css.success : st === "alerte" ? css.warn : css.danger;
   return (
     <div style={{ marginTop: 10 }}>
@@ -61,9 +62,12 @@ function StockBar({ art }) {
             {art.stock}
           </strong>{" "}{art.unite}
         </span>
-        <span>Seuil : {art.seuil} {art.unite}</span>
+        <span style={{ display: "flex", gap: 8 }}>
+          <span style={{ color: css.inkGhost }}>/{art.stock_initial > 0 ? art.stock_initial : "—"}</span>
+          <span>Seuil : {art.seuil}</span>
+        </span>
       </div>
-      <div style={{ height: 5, background: css.border, borderRadius: 99, overflow: "hidden" }}>
+      <div style={{ height: 6, background: css.border, borderRadius: 99, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: fillColor, borderRadius: 99, transition: "width .4s" }} />
       </div>
     </div>
@@ -1195,16 +1199,19 @@ export default function App() {
 
   const handleMouvement = (artId, type, qte, motif) => {
     const art = articles.find(a => a.id === artId);
+    const newStock = type === "entree" ? art.stock + qte : Math.max(0, art.stock - qte);
     setArticles(prev => prev.map(a => {
       if (a.id !== artId) return a;
-      return { ...a, stock: type === "entree" ? a.stock + qte : Math.max(0, a.stock - qte) };
+      return type === "entree"
+        ? { ...a, stock: newStock, stock_initial: newStock }
+        : { ...a, stock: newStock };
     }));
     setHistorique(prev => [...prev, {
       id: Date.now(), date: now(), artId, artNom: art?.nom || artId, type, qte, motif,
       prixUnit: type === "sortie" ? (art?.prix || 0) : 0,
     }]);
-    const newStock = type === "entree" ? art.stock + qte : Math.max(0, art.stock - qte);
-    supabase.from("articles").update({ stock: newStock }).eq("id", artId)
+    const updatePayload = type === "entree" ? { stock: newStock, stock_initial: newStock } : { stock: newStock };
+    supabase.from("articles").update(updatePayload).eq("id", artId)
       .then(({ error }) => { if (error) console.error("UPDATE stock mouvement:", error.message); });
     supabase.from("historique").insert([histToDb({ date: now(), artId, artNom: art?.nom || artId, type, qte, motif, prixUnit: type === "sortie" ? (art?.prix || 0) : 0 })])
       .then(({ error }) => { if (error) console.error("INSERT historique mouvement:", error.message); });
@@ -1264,8 +1271,9 @@ export default function App() {
   };
 
   const handleCreateArticle = (article) => {
-    setArticles(prev => [...prev, article]);
-    supabase.from("articles").insert([article])
+    const articleWithInit = { ...article, stock_initial: article.stock || 0 };
+    setArticles(prev => [...prev, articleWithInit]);
+    supabase.from("articles").insert([articleWithInit])
       .then(({ error }) => { if (error) console.error("INSERT article:", error.message); });
     if (article.stock > 0) {
       setHistorique(prev => [...prev, {

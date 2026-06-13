@@ -1383,8 +1383,8 @@ export default function App() {
       {/* ── Sidebar (desktop) ─────────────────────────────────── */}
       <aside className="app-sidebar">
         <div style={{ padding: "4px 12px 20px", borderBottom: `1px solid ${css.border}`, marginBottom: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: css.ink, letterSpacing: -0.5 }}>StockOp</div>
-          <div style={{ fontSize: 11, color: css.inkSoft, marginTop: 2 }}>{today()}</div>
+          <img src="/logo.png" alt="O'France" style={{ height: 44, objectFit: "contain", marginBottom: 8, display: "block" }} />
+          <div style={{ fontSize: 11, color: css.inkSoft }}>{today()}</div>
         </div>
         {navItems.map(item => {
           const active = screen === item.key
@@ -1419,8 +1419,11 @@ export default function App() {
           justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div onClick={isBack ? () => setScreen(meta.back || "dashboard") : undefined}
             style={{ cursor: isBack ? "pointer" : "default" }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: isBack ? css.primary : css.ink }}>
-              {isBack ? meta.title : "StockOp"}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {!isBack && <img src="/logo.png" alt="O'France" style={{ height: 30, objectFit: "contain" }} />}
+              <span style={{ fontSize: 20, fontWeight: 700, color: isBack ? css.primary : css.ink }}>
+                {isBack ? meta.title : ""}
+              </span>
             </div>
             <div style={{ fontSize: 13, color: css.inkSoft, marginTop: 1 }}>
               {isBack

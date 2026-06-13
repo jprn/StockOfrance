@@ -455,15 +455,16 @@ function Stock({ articles, setScreen, setSelectedArt }) {
       </div>
       {filtered.length === 0
         ? <div style={{ textAlign: "center", color: css.inkGhost, fontSize: 14, padding: 32 }}>Aucun article trouvé</div>
-        : filtered.map(art => {
+        : filtered.map((art, idx) => {
           const st  = stockStatus(art);
           const pct = stockPct(art);
           const col = stockFillColor(st);
+          const bg  = idx % 2 === 0 ? "#FFFFFF" : "#F7F7FB";
           return (
             <div key={art.id} onClick={() => { setSelectedArt(art.id); setScreen("detail_article"); }}
               style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden",
                 boxShadow: "0 2px 8px rgba(0,0,0,.07)", cursor: "pointer",
-                background: css.surface, borderLeft: `8px solid ${col}` }}>
+                background: bg, borderLeft: `8px solid ${col}` }}>
               <div style={{ padding: "14px 16px 10px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>

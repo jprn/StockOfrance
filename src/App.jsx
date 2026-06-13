@@ -163,7 +163,7 @@ function Dashboard({ articles, commandes, setScreen, setSelectedCmd }) {
                     </span>
                     <span style={{ fontSize: 10, fontWeight: 700, color: s.color,
                       background: s.color + "22", padding: "1px 6px", borderRadius: 99, flexShrink: 0 }}>
-                      {a.stock} {a.unite}
+                      {a.stock} {a.stock > 1 && !a.unite.toLowerCase().endsWith("s") && !a.unite.toLowerCase().endsWith("x") ? a.unite + "s" : a.unite}
                     </span>
                   </div>
                 ))}
@@ -1027,11 +1027,11 @@ function VenteDirecte({ articles, onVente }) {
 }
 
 // ── NOUVEL ARTICLE ──────────────────────────────────────────────────────────────
-const UNITES = ["kg", "litres", "bouteilles", "boîtes", "unités", "cartons", "sachets", "pièces"];
+const UNITES = ["Pièce"];
 
 function NouvelArticle({ articles, onCreer }) {
   const [nom, setNom] = useState("");
-  const [unite, setUnite] = useState("kg");
+  const [unite, setUnite] = useState("Pièce");
   const [uniteCustom, setUniteCustom] = useState("");
   const [stock, setStock] = useState("");
   const [seuil, setSeuil] = useState("");

@@ -1213,7 +1213,8 @@ export default function App() {
 
   const handleImport = (cmds) => {
     setCommandes(prev => [...cmds, ...prev]);
-    supabase.from("commandes").insert(cmds)
+    const toInsert = cmds.map(({ _artNoms, ...c }) => c);
+    supabase.from("commandes").insert(toInsert)
       .then(({ error }) => { if (error) console.error("INSERT commandes import:", error.message); });
     showToast(`${cmds.length} commande${cmds.length > 1 ? "s" : ""} importée${cmds.length > 1 ? "s" : ""} ✓`);
     setScreen("commandes");

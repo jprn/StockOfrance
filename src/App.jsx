@@ -1371,7 +1371,7 @@ export default function App() {
           position: fixed; top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           width: 88vw; max-width: 340px;
-          opacity: 0.10; pointer-events: none; z-index: 0;
+          opacity: 0.20; pointer-events: none; z-index: 0;
         }
         @media (min-width: 768px) {
           .hide-on-desktop { display: none; }
@@ -1452,8 +1452,8 @@ export default function App() {
                 </div>
               </>
             ) : (
-              <span className="centered-title"
-                style={{ fontSize: 20, fontWeight: 900, color: css.primary, letterSpacing: -0.5, whiteSpace: "nowrap" }}>
+              <span className="centered-title show-on-desktop"
+                style={{ fontSize: 40, fontWeight: 900, color: css.primary, letterSpacing: -1, whiteSpace: "nowrap" }}>
                 O'FRANCE 2026
               </span>
             )}
@@ -1462,7 +1462,7 @@ export default function App() {
           {/* Droite : date (mobile seulement) + bouton action */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {!isBack && (
-              <span className="hide-on-desktop" style={{
+              <span className="centered-title hide-on-desktop" style={{
                 fontSize: 18, fontWeight: 800, color: css.primary,
                 letterSpacing: -0.5, lineHeight: 1,
                 background: css.primaryLt, padding: "5px 12px",

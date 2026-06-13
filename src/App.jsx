@@ -458,9 +458,15 @@ function Stock({ articles, setScreen, setSelectedArt }) {
           return (
             <div key={art.id} onClick={() => { setSelectedArt(art.id); setScreen("detail_article"); }}
               style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden",
-                boxShadow: "0 1px 4px rgba(0,0,0,.06)", cursor: "pointer", position: "relative",
-                background: `linear-gradient(to right, ${col}28 ${pct}%, ${css.surface} ${pct}%)` }}>
-              <div style={{ padding: 16 }}>
+                boxShadow: "0 1px 4px rgba(0,0,0,.06)", cursor: "pointer",
+                position: "relative", background: css.surface }}>
+              <div style={{
+                position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`,
+                background: `linear-gradient(to right, ${col}15, ${col}40)`,
+                borderRadius: "0 12px 12px 0",
+                transition: "width .5s ease",
+              }} />
+              <div style={{ padding: 16, position: "relative" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 600, color: css.ink }}>{art.nom}</div>

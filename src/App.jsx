@@ -1361,14 +1361,24 @@ export default function App() {
         }
         .toast-fixed { bottom: 90px; }
         .hide-on-desktop { }
+        .show-on-desktop { display: none; }
+        .mobile-bg-logo {
+          display: block;
+          position: fixed; top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+          width: 88vw; max-width: 340px;
+          opacity: 0.045; pointer-events: none; z-index: 0;
+        }
         @media (min-width: 768px) {
           .hide-on-desktop { display: none; }
+          .show-on-desktop { display: block; }
+          .mobile-bg-logo { display: none; }
           .app-sidebar {
             display: flex; flex-direction: column;
-            width: 200px; min-width: 200px;
+            width: 240px; min-width: 240px;
             background: #FFFFFF;
             border-right: 1px solid #E2E2EF;
-            padding: 20px 10px 16px;
+            padding: 20px 12px 16px;
             gap: 2px;
             overflow-y: auto;
             flex-shrink: 0;
@@ -1378,16 +1388,19 @@ export default function App() {
           .toast-fixed { bottom: 32px; }
         }
         @media (min-width: 1200px) {
-          .app-sidebar { width: 240px; min-width: 240px; padding: 24px 14px 20px; }
+          .app-sidebar { width: 280px; min-width: 280px; padding: 24px 16px 20px; }
         }
       `}</style>
 
       {/* ── Sidebar (desktop) ─────────────────────────────────── */}
       <aside className="app-sidebar">
-        <div style={{ padding: "8px 12px 20px", borderBottom: `1px solid ${css.border}`, marginBottom: 10,
+        <div style={{ padding: "8px 12px 24px", borderBottom: `1px solid ${css.border}`, marginBottom: 10,
           display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-          <img src="/logo.png" alt="O'France" style={{ height: 64, objectFit: "contain", marginBottom: 6 }} />
-          <div style={{ fontSize: 12, color: css.inkSoft, fontWeight: 500 }}>{today()}</div>
+          <img src="/logo.png" alt="O'France" style={{ height: 90, objectFit: "contain", marginBottom: 10 }} />
+          <span style={{ fontSize: 18, fontWeight: 800, color: css.primary, letterSpacing: -0.5,
+            background: css.primaryLt, padding: "5px 14px", borderRadius: 10, lineHeight: 1 }}>
+            {today()}
+          </span>
         </div>
         {navItems.map(item => {
           const active = screen === item.key
@@ -1416,6 +1429,7 @@ export default function App() {
 
       {/* ── Main ──────────────────────────────────────────────── */}
       <div className="app-main">
+        <img src="/logo.png" alt="" className="mobile-bg-logo" />
         {/* Header */}
         <div style={{ background: css.surface, padding: "13px 20px",
           borderBottom: `1px solid ${css.border}`, display: "flex",
@@ -1433,14 +1447,22 @@ export default function App() {
                 </div>
               </>
             ) : (
-              <img src="/logo.png" alt="O'France" style={{ height: 30, objectFit: "contain" }} />
+              <>
+                <img src="/logo.png" alt="O'France"
+                  className="hide-on-desktop"
+                  style={{ height: 30, objectFit: "contain" }} />
+                <span className="show-on-desktop"
+                  style={{ fontSize: 22, fontWeight: 900, color: css.primary, letterSpacing: -0.5 }}>
+                  O'FRANCE 2026
+                </span>
+              </>
             )}
           </div>
 
           {/* Droite : date (mobile seulement) + bouton action */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {!isBack && (
-              <span className="hide-on-desktop" style={{
+              <span style={{
                 fontSize: 18, fontWeight: 800, color: css.primary,
                 letterSpacing: -0.5, lineHeight: 1,
                 background: css.primaryLt, padding: "5px 12px",

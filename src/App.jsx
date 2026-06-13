@@ -1318,6 +1318,7 @@ export default function App() {
         }
         .app-content > * { min-height: 0; }
         .app-nav-mobile {
+          display: flex;
           padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
           flex-shrink: 0;
         }
@@ -1452,7 +1453,8 @@ export default function App() {
 
         {/* Barre de navigation mobile */}
         <div className="app-nav-mobile" style={{ background: css.surface,
-          borderTop: `1px solid ${css.border}`, display: "flex" }}>
+          borderTop: `1px solid ${css.border}` }}>
+
           {navItems.map(item => (
             <div key={item.key} onClick={() => setScreen(item.key)}
               style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center",

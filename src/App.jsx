@@ -63,12 +63,12 @@ function StockBar({ art }) {
       <span>
         <strong style={{ color: st === "rupture" ? css.danger : css.ink, fontSize: 18, fontWeight: 800 }}>
           {art.stock}
-        </strong>{" "}{art.unite}
+        </strong>
         {art.stock_initial > 0 && (
           <span style={{ color: css.inkGhost, fontWeight: 400 }}> / {art.stock_initial}</span>
         )}
       </span>
-      <span style={{ fontSize: 11, color: css.inkGhost }}>Seuil : {art.seuil} {art.unite}</span>
+      <span style={{ fontSize: 11, color: css.inkGhost }}>Seuil : {art.seuil}</span>
     </div>
   );
 }

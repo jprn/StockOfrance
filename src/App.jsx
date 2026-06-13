@@ -1363,8 +1363,13 @@ export default function App() {
         .hide-on-desktop { }
         .show-on-desktop { display: none; }
         .centered-title {
-          position: absolute; left: 50%; transform: translateX(-50%);
+          position: absolute; left: 50%; top: 50%;
+          transform: translate(-50%, -50%);
           pointer-events: none;
+        }
+        .app-header { }
+        @media (min-width: 768px) {
+          .app-header { min-height: 70px; }
         }
         .mobile-bg-logo {
           display: block;
@@ -1435,7 +1440,7 @@ export default function App() {
       <div className="app-main">
         <img src="/logo.png" alt="" className="mobile-bg-logo" />
         {/* Header */}
-        <div style={{ background: css.surface, padding: "13px 20px",
+        <div className="app-header" style={{ background: css.surface, padding: "13px 20px",
           borderBottom: `1px solid ${css.border}`, display: "flex",
           justifyContent: "space-between", alignItems: "center", flexShrink: 0,
           position: "relative" }}>

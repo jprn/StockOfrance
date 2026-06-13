@@ -131,7 +131,7 @@ function Dashboard({ articles, commandes, setScreen, setSelectedCmd }) {
   const ruptures = articles.filter(a => stockStatus(a) === "rupture");
 
   return (
-    <div className="screen-pad" style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: "16px 16px 0" }}>
       {alertes.length > 0 && (
         <div style={{ background: css.warnLt, borderLeft: `3px solid ${css.warn}`, borderRadius: 10,
           padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 10,
@@ -191,17 +191,19 @@ function Dashboard({ articles, commandes, setScreen, setSelectedCmd }) {
       </div>
 
       <SectionTitle>Commandes en attente{attente.length > 0 && <span style={{ fontWeight: 400, color: css.inkGhost, marginLeft: 6 }}>({attente.length})</span>}</SectionTitle>
-      {attente.length === 0
-        ? <div style={{ textAlign: "center", color: css.inkGhost, fontSize: 14, padding: 24 }}>Aucune commande en attente 🎉</div>
-        : (
-          <div style={{ maxHeight: 340, overflowY: "auto", paddingRight: 2 }}>
-            {attente.map(cmd => (
-              <OrderCard key={cmd.id} cmd={cmd} articles={articles}
-                onClick={() => { setSelectedCmd(cmd.id); setScreen("detail_commande"); }} />
-            ))}
-          </div>
-        )
-      }
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        {attente.length === 0
+          ? <div style={{ textAlign: "center", color: css.inkGhost, fontSize: 14, padding: 24 }}>Aucune commande en attente 🎉</div>
+          : (
+            <div style={{ flex: 1, overflowY: "auto", paddingRight: 2, paddingBottom: 20 }}>
+              {attente.map(cmd => (
+                <OrderCard key={cmd.id} cmd={cmd} articles={articles}
+                  onClick={() => { setSelectedCmd(cmd.id); setScreen("detail_commande"); }} />
+              ))}
+            </div>
+          )
+        }
+      </div>
     </div>
   );
 }
@@ -1374,7 +1376,7 @@ export default function App() {
           display: block;
           position: fixed; top: 50%; left: 50%;
           transform: translate(-50%, -50%);
-          width: 88vw; max-width: 340px;
+          width: min(80vw, 75vh);
           opacity: 0.20; pointer-events: none; z-index: 0;
         }
         @media (min-width: 768px) {

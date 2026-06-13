@@ -128,7 +128,7 @@ function Dashboard({ articles, commandes, setScreen, setSelectedCmd }) {
   const ruptures = articles.filter(a => stockStatus(a) === "rupture");
 
   return (
-    <div style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
+    <div className="screen-pad" style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
       {alertes.length > 0 && (
         <div style={{ background: css.warnLt, borderLeft: `3px solid ${css.warn}`, borderRadius: 10,
           padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 10,
@@ -258,7 +258,7 @@ function Commandes({ articles, commandes, setScreen, setSelectedCmd }) {
   ];
 
   return (
-    <div style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
+    <div className="screen-pad" style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
       <SearchBar value={search} onChange={setSearch} placeholder="Nom, n° commande, article…" />
       <div style={{ display: "flex", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
         {pills.map(p => (
@@ -310,7 +310,7 @@ function DetailCommande({ cmdId, articles, commandes, onValider, setScreen }) {
 
   return (
     <div style={{ flex: 1, overflowY: "auto", position: "relative" }}>
-      <div style={{ padding: "16px 16px 80px" }}>
+      <div className="screen-pad" style={{ padding: "16px 16px 80px" }}>
         <SectionTitle>Informations</SectionTitle>
         <div style={{ background: css.surface, borderRadius: 14, padding: 16, marginBottom: 10,
           boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
@@ -432,7 +432,7 @@ function Stock({ articles, setScreen, setSelectedArt }) {
   ];
 
   return (
-    <div style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
+    <div className="screen-pad" style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
       <SearchBar value={search} onChange={setSearch} placeholder="Nom ou référence…" />
       <div style={{ display: "flex", gap: 8, marginBottom: 14, overflowX: "auto" }}>
         {pills.map(p => (
@@ -487,7 +487,7 @@ function DetailArticle({ artId, articles, historique, onMouvement, onSupprimer }
   };
 
   return (
-    <div style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
+    <div className="screen-pad" style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
       <div style={{ background: css.surface, borderRadius: 14, padding: 16, marginBottom: 10,
         boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
@@ -629,7 +629,7 @@ function ImportCSV({ onImport }) {
   };
 
   return (
-    <div style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
+    <div className="screen-pad" style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
       <div style={{ background: css.warnLt, borderRadius: 12, padding: "12px 14px", marginBottom: 14,
         fontSize: 12, color: css.warn, fontWeight: 600 }}>
         Format CSV attendu :<br />
@@ -780,7 +780,7 @@ function Historique({ historique }) {
   };
 
   return (
-    <div style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
+    <div className="screen-pad" style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
       {/* Onglets */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         {[
@@ -1037,7 +1037,7 @@ function NouvelArticle({ articles, onCreer }) {
   };
 
   return (
-    <div style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
+    <div className="screen-pad" style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
       <div style={{ background: css.surface, borderRadius: 14, padding: 16, marginBottom: 14,
         boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
 
@@ -1290,9 +1290,9 @@ export default function App() {
   const isBack = ["detail_commande", "detail_article", "import", "historique", "nouvel_article", "vente_directe"].includes(screen);
 
   return (
-    <div className="app-outer" style={{ display: "flex", justifyContent: "center", minHeight: "100vh", background: "#D8D8E8",
-      padding: "24px 0", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div className="app-root" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <style>{`
+        html, body, #root { height: 100%; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
         @keyframes fadeup {
@@ -1300,51 +1300,80 @@ export default function App() {
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
         ::-webkit-scrollbar { display: none; }
-        html, body, #root { height: 100%; }
-        @media (max-width: 520px) {
-          .app-outer {
-            padding: 0 !important;
-            background: #F0F0F8 !important;
-            display: block !important;
-            min-height: 100vh;
-            min-height: 100dvh;
+        .app-root {
+          display: flex; flex-direction: row;
+          height: 100vh; height: 100dvh;
+          background: #F0F0F8;
+          overflow: hidden;
+          position: relative;
+        }
+        .app-sidebar { display: none; }
+        .app-main {
+          flex: 1; display: flex; flex-direction: column;
+          overflow: hidden; min-width: 0; position: relative;
+        }
+        .app-content {
+          flex: 1; display: flex; flex-direction: column;
+          min-height: 0;
+        }
+        .app-content > * { min-height: 0; }
+        .app-nav-mobile {
+          padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+          flex-shrink: 0;
+        }
+        .toast-fixed { bottom: 90px; }
+        @media (min-width: 1024px) {
+          .app-sidebar {
+            display: flex; flex-direction: column;
+            width: 220px; min-width: 220px;
+            background: #FFFFFF;
+            border-right: 1px solid #E2E2EF;
+            padding: 20px 12px 16px;
+            gap: 2px;
+            overflow-y: auto;
+            flex-shrink: 0;
           }
-          .app-shell {
-            width: 100% !important;
-            height: 100vh !important;
-            height: 100dvh !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-          }
-          .status-bar-mock { display: none !important; }
-          .nav-bar {
-            padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px) !important;
-          }
-          .toast-fixed {
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
-          }
+          .app-nav-mobile { display: none; }
+          .screen-pad { padding-bottom: 32px !important; }
+          .toast-fixed { bottom: 32px; }
         }
       `}</style>
 
-      <div className="app-shell" style={{ width: 375, background: css.bg, borderRadius: 40,
-        boxShadow: "0 24px 60px rgba(0,0,0,.22), 0 0 0 1px rgba(255,255,255,.3)",
-        overflow: "hidden", display: "flex", flexDirection: "column", height: 812, position: "relative" }}>
-
-        {/* Status bar */}
-        <div className="status-bar-mock" style={{ background: css.surface, padding: "14px 20px 10px",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          fontSize: 12, fontWeight: 600, color: css.ink, flexShrink: 0 }}>
-          <span>9:41</span>
-          <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-            {[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, background: css.ink, borderRadius: "50%" }} />)}
-            <div style={{ width: 20, height: 10, border: `1.5px solid ${css.ink}`, borderRadius: 2, position: "relative" }}>
-              <div style={{ position: "absolute", top: 2, left: 2, width: 12, height: 6, background: css.ink, borderRadius: 1 }} />
-            </div>
-          </div>
+      {/* ── Sidebar (desktop) ─────────────────────────────────── */}
+      <aside className="app-sidebar">
+        <div style={{ padding: "4px 12px 20px", borderBottom: `1px solid ${css.border}`, marginBottom: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: css.ink, letterSpacing: -0.5 }}>StockOp</div>
+          <div style={{ fontSize: 11, color: css.inkSoft, marginTop: 2 }}>{today()}</div>
         </div>
+        {navItems.map(item => {
+          const active = screen === item.key
+            || (item.key === "commandes" && ["detail_commande", "import"].includes(screen))
+            || (item.key === "stock" && ["detail_article", "nouvel_article"].includes(screen));
+          return (
+            <div key={item.key} onClick={() => setScreen(item.key)}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px",
+                borderRadius: 12, cursor: "pointer", fontSize: 14, fontWeight: 600,
+                color: active ? css.primary : css.inkSoft,
+                background: active ? css.primaryLt : "transparent",
+                userSelect: "none", position: "relative" }}>
+              <span style={{ fontSize: 20 }}>{item.icon}</span>
+              {item.label}
+              {item.badge > 0 && (
+                <span style={{ marginLeft: "auto", background: css.danger, color: "#fff",
+                  fontSize: 10, fontWeight: 800, minWidth: 18, height: 18, borderRadius: 99,
+                  display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
+                  {item.badge}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </aside>
 
+      {/* ── Main ──────────────────────────────────────────────── */}
+      <div className="app-main">
         {/* Header */}
-        <div style={{ background: css.surface, padding: "14px 20px 13px",
+        <div style={{ background: css.surface, padding: "13px 20px",
           borderBottom: `1px solid ${css.border}`, display: "flex",
           justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div onClick={isBack ? () => setScreen(meta.back || "dashboard") : undefined}
@@ -1380,7 +1409,7 @@ export default function App() {
         )}
 
         {/* Contenu de l'écran */}
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+        <div className="app-content">
           {loading && (
             <div style={{ position: "absolute", inset: 0, background: css.bg, zIndex: 20,
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -1418,9 +1447,9 @@ export default function App() {
           )}
         </div>
 
-        {/* Barre de navigation */}
-        <div className="nav-bar" style={{ background: css.surface, borderTop: `1px solid ${css.border}`,
-          display: "flex", paddingBottom: 16, flexShrink: 0 }}>
+        {/* Barre de navigation mobile */}
+        <div className="app-nav-mobile" style={{ background: css.surface,
+          borderTop: `1px solid ${css.border}`, display: "flex" }}>
           {navItems.map(item => (
             <div key={item.key} onClick={() => setScreen(item.key)}
               style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center",

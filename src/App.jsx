@@ -1360,7 +1360,9 @@ export default function App() {
           flex-shrink: 0;
         }
         .toast-fixed { bottom: 90px; }
+        .hide-on-desktop { }
         @media (min-width: 768px) {
+          .hide-on-desktop { display: none; }
           .app-sidebar {
             display: flex; flex-direction: column;
             width: 200px; min-width: 200px;
@@ -1382,9 +1384,10 @@ export default function App() {
 
       {/* ── Sidebar (desktop) ─────────────────────────────────── */}
       <aside className="app-sidebar">
-        <div style={{ padding: "4px 12px 20px", borderBottom: `1px solid ${css.border}`, marginBottom: 10 }}>
-          <img src="/logo.png" alt="O'France" style={{ height: 44, objectFit: "contain", marginBottom: 8, display: "block" }} />
-          <div style={{ fontSize: 11, color: css.inkSoft }}>{today()}</div>
+        <div style={{ padding: "8px 12px 20px", borderBottom: `1px solid ${css.border}`, marginBottom: 10,
+          display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+          <img src="/logo.png" alt="O'France" style={{ height: 64, objectFit: "contain", marginBottom: 6 }} />
+          <div style={{ fontSize: 12, color: css.inkSoft, fontWeight: 500 }}>{today()}</div>
         </div>
         {navItems.map(item => {
           const active = screen === item.key
@@ -1425,7 +1428,8 @@ export default function App() {
                 {isBack ? meta.title : ""}
               </span>
             </div>
-            <div style={{ fontSize: 13, color: css.inkSoft, marginTop: 1 }}>
+            <div style={{ fontSize: 13, color: css.inkSoft, marginTop: 1 }}
+              className={!isBack ? "hide-on-desktop" : ""}>
               {isBack
                 ? screen === "detail_commande" ? commandes.find(c => c.id === selectedCmd)?.client
                 : screen === "detail_article"  ? articles.find(a => a.id === selectedArt)?.nom

@@ -124,11 +124,15 @@ function Btn({ children, onClick, variant = "primary", style: s = {} }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
-function Dashboard({ articles, commandes, setScreen, setSelectedCmd }) {
-  const attente = commandes.filter(c => c.statut === "en_attente");
-  const livrees = commandes.filter(c => c.statut === "livree");
-  const alertes = articles.filter(a => stockStatus(a) !== "ok");
+function Dashboard({ articles, commandes, historique, setScreen, setSelectedCmd }) {
+  const attente  = commandes.filter(c => c.statut === "en_attente");
+  const livrees  = commandes.filter(c => c.statut === "livree");
+  const annulees = commandes.filter(c => c.statut === "annulee");
+  const alertes  = articles.filter(a => stockStatus(a) !== "ok");
   const ruptures = articles.filter(a => stockStatus(a) === "rupture");
+  const ca = historique
+    .filter(h => h.type === "sortie")
+    .reduce((sum, h) => sum + (h.qte || 0) * (h.prixUnit || 0), 0);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: "16px 16px 0" }}>
@@ -139,6 +143,26 @@ function Dashboard({ articles, commandes, setScreen, setSelectedCmd }) {
           ⚠️ {alertes.length} article{alertes.length > 1 ? "s" : ""} sous le seuil d'alerte
         </div>
       )}
+
+      <SectionTitle>Chiffres clés</SectionTitle>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+        <div style={{ background: css.surface, borderRadius: 14, padding: "14px 14px",
+          boxShadow: "0 1px 4px rgba(0,0,0,.06)", borderLeft: `3px solid ${css.success}` }}>
+          <div style={{ fontSize: 11, color: css.inkGhost, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Chiffre d'affaires</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: css.success, letterSpacing: -0.5, lineHeight: 1 }}>
+            {fmtEur(ca)}
+          </div>
+          <div style={{ fontSize: 10, color: css.inkGhost, marginTop: 4 }}>{livrees.length} livraison{livrees.length > 1 ? "s" : ""} confirmée{livrees.length > 1 ? "s" : ""}</div>
+        </div>
+        <div style={{ background: css.surface, borderRadius: 14, padding: "14px 14px",
+          boxShadow: "0 1px 4px rgba(0,0,0,.06)", borderLeft: `3px solid ${css.danger}` }}>
+          <div style={{ fontSize: 11, color: css.inkGhost, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Commandes annulées</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: annulees.length > 0 ? css.danger : css.inkGhost, letterSpacing: -1, lineHeight: 1 }}>
+            {annulees.length}
+          </div>
+          <div style={{ fontSize: 10, color: css.inkGhost, marginTop: 4 }}>sur {commandes.length} commande{commandes.length > 1 ? "s" : ""} au total</div>
+        </div>
+      </div>
 
       <SectionTitle>Aujourd'hui</SectionTitle>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
@@ -293,9 +317,10 @@ function Commandes({ articles, commandes, setScreen, setSelectedCmd }) {
 }
 
 // ── DÉTAIL COMMANDE ───────────────────────────────────────────────────────────
-function DetailCommande({ cmdId, articles, commandes, onValider, setScreen }) {
+function DetailCommande({ cmdId, articles, commandes, onValider, onAnnuler, setScreen }) {
   const cmd = commandes.find(c => c.id === cmdId);
   const [showModal, setShowModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
   if (!cmd) return null;
@@ -315,6 +340,11 @@ function DetailCommande({ cmdId, articles, commandes, onValider, setScreen }) {
       setShowModal(false);
       setConfirmed(false);
     }, 600);
+  };
+
+  const handleAnnuler = () => {
+    onAnnuler(cmd.id);
+    setShowCancelModal(false);
   };
 
   return (
@@ -357,7 +387,10 @@ function DetailCommande({ cmdId, articles, commandes, onValider, setScreen }) {
         </div>
 
         {cmd.statut === "en_attente" && (
-          <Btn onClick={() => setShowModal(true)} variant="primary">✓ Valider le retrait</Btn>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <Btn onClick={() => setShowModal(true)} variant="primary">✓ Valider le retrait</Btn>
+            <Btn onClick={() => setShowCancelModal(true)} variant="secondary">✕ Annuler la commande</Btn>
+          </div>
         )}
         {cmd.statut === "livree" && (
           <div style={{ textAlign: "center", padding: 16, background: css.successLt, borderRadius: 14,
@@ -369,7 +402,7 @@ function DetailCommande({ cmdId, articles, commandes, onValider, setScreen }) {
         )}
       </div>
 
-      {/* Bottom sheet de confirmation */}
+      {/* Bottom sheet de confirmation retrait */}
       {showModal && (
         <div style={{ position: "absolute", inset: 0, background: "rgba(10,10,30,.5)",
           display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 50 }}
@@ -411,6 +444,29 @@ function DetailCommande({ cmdId, articles, commandes, onValider, setScreen }) {
                 {confirmed ? "⏳ En cours…" : "✓ Confirmer la livraison"}
               </Btn>
               <Btn onClick={() => setShowModal(false)} variant="secondary">Annuler</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom sheet de confirmation annulation commande */}
+      {showCancelModal && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(10,10,30,.5)",
+          display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 50 }}
+          onClick={e => { if (e.target === e.currentTarget) setShowCancelModal(false); }}>
+          <div style={{ background: css.surface, borderRadius: "24px 24px 0 0", padding: 20 }}>
+            <div style={{ width: 36, height: 4, background: css.border, borderRadius: 99, margin: "0 auto 18px" }} />
+            <div style={{ fontSize: 18, fontWeight: 700, color: css.ink, marginBottom: 4 }}>Annuler la commande</div>
+            <div style={{ fontSize: 13, color: css.inkSoft, marginBottom: 16 }}>
+              Êtes-vous sûr de vouloir annuler la commande <span style={{ fontWeight: 700, color: css.primary }}>{cmd.id}</span> de <span style={{ fontWeight: 700 }}>{cmd.client}</span> ? Cette action est irréversible.
+            </div>
+            <div style={{ padding: "10px 12px", background: css.dangerLt, borderRadius: 8, marginBottom: 16,
+              fontSize: 12, color: css.danger, fontWeight: 600 }}>
+              ⚠ Le stock ne sera pas modifié.
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Btn onClick={handleAnnuler} variant="danger">✕ Confirmer l'annulation</Btn>
+              <Btn onClick={() => setShowCancelModal(false)} variant="secondary">Retour</Btn>
             </div>
           </div>
         </div>
@@ -1215,6 +1271,16 @@ export default function App() {
     setScreen("commandes");
   };
 
+  const handleAnnulerCommande = (cmdId) => {
+    const cmd = commandes.find(c => c.id === cmdId);
+    if (!cmd) return;
+    setCommandes(prev => prev.map(c => c.id === cmdId ? { ...c, statut: "annulee" } : c));
+    supabase.from("commandes").update({ statut: "annulee" }).eq("id", cmdId)
+      .then(({ error }) => { if (error) console.error("UPDATE commande annulation:", error.message); });
+    showToast(`✕ ${cmd.client} — commande annulée`);
+    setScreen("commandes");
+  };
+
   const handleMouvement = (artId, type, qte, motif) => {
     const art = articles.find(a => a.id === artId);
     const newStock = type === "entree" ? art.stock + qte : Math.max(0, art.stock - qte);
@@ -1508,7 +1574,7 @@ export default function App() {
             </div>
           )}
           {screen === "dashboard" && (
-            <Dashboard articles={articles} commandes={commandes}
+            <Dashboard articles={articles} commandes={commandes} historique={historique}
               setScreen={setScreen} setSelectedCmd={setSelectedCmd} />
           )}
           {screen === "commandes" && (
@@ -1517,7 +1583,7 @@ export default function App() {
           )}
           {screen === "detail_commande" && (
             <DetailCommande cmdId={selectedCmd} articles={articles} commandes={commandes}
-              onValider={handleValider} setScreen={setScreen} />
+              onValider={handleValider} onAnnuler={handleAnnulerCommande} setScreen={setScreen} />
           )}
           {screen === "stock" && (
             <Stock articles={articles} setScreen={setScreen} setSelectedArt={setSelectedArt} />

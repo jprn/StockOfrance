@@ -555,16 +555,16 @@ function Stock({ articles, commandes, setScreen, setSelectedArt }) {
                   </div>
                 </div>
                 <StockBar art={art} />
-                {reserved > 0 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                    <span style={{ fontSize: 11, color: css.inkGhost }}>Stock virtuel :</span>
-                    <span style={{ fontSize: 13, fontWeight: 800,
-                      color: stockVirtuel === 0 ? css.danger : stockVirtuel <= art.seuil ? css.warn : css.success }}>
-                      {stockVirtuel} {art.unite}
-                    </span>
-                    <span style={{ fontSize: 10, color: css.inkGhost }}>après livraisons en attente</span>
-                  </div>
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                  <span style={{ fontSize: 11, color: css.inkGhost }}>Stock virtuel :</span>
+                  <span style={{ fontSize: 13, fontWeight: 800,
+                    color: stockVirtuel === 0 ? css.danger : stockVirtuel <= art.seuil ? css.warn : css.success }}>
+                    {stockVirtuel} {art.unite}
+                  </span>
+                  <span style={{ fontSize: 10, color: css.inkGhost }}>
+                    {reserved > 0 ? `(−${reserved} réservé${reserved > 1 ? "s" : ""})` : "aucune réservation"}
+                  </span>
+                </div>
               </div>
               <div style={{ height: 8, background: css.border, position: "relative" }}>
                 <div style={{ position: "absolute", left: 0, top: 0, height: "100%",
@@ -1482,7 +1482,7 @@ export default function App() {
           position: fixed; top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           width: min(80vw, 75vh);
-          opacity: 0.20; pointer-events: none; z-index: 0;
+          opacity: 0.07; pointer-events: none; z-index: 0;
         }
         @media (min-width: 768px) {
           .hide-on-desktop { display: none; }

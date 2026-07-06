@@ -476,9 +476,19 @@ function DetailCommande({ cmdId, articles, commandes, onValider, onAnnuler, setS
 }
 
 // ── STOCK ─────────────────────────────────────────────────────────────────────
-function Stock({ articles, setScreen, setSelectedArt }) {
+function Stock({ articles, commandes, setScreen, setSelectedArt }) {
   const [search, setSearch] = useState("");
   const [filtre, setFiltre] = useState("tous");
+
+  const reservedByArt = useMemo(() => {
+    const map = {};
+    commandes
+      .filter(c => c.statut === "en_attente")
+      .forEach(c => c.lignes.forEach(l => {
+        map[l.artId] = (map[l.artId] || 0) + l.qte;
+      }));
+    return map;
+  }, [commandes]);
 
   const filtered = useMemo(() => articles.filter(a => {
     const st = stockStatus(a);
@@ -515,9 +525,14 @@ function Stock({ articles, setScreen, setSelectedArt }) {
         ? <div style={{ textAlign: "center", color: css.inkGhost, fontSize: 14, padding: 32 }}>Aucun article trouvé</div>
         : filtered.map((art, idx) => {
           const st  = stockStatus(art);
-          const pct = stockPct(art);
           const col = stockFillColor(st);
           const bg  = idx % 2 === 0 ? "#FFFFFF" : "#F7F7FB";
+          const reserved = reservedByArt[art.id] || 0;
+          const stockVirtuel = Math.max(0, art.stock - reserved);
+          const ref = art.stock_initial > 0 ? art.stock_initial : (art.seuil > 0 ? art.seuil * 2.5 : art.stock || 1);
+          const pctActuel = Math.min(100, Math.round((art.stock / ref) * 100));
+          const pctVirtuel = Math.min(100, Math.round((stockVirtuel / ref) * 100));
+          const pctReserved = pctActuel - pctVirtuel;
           return (
             <div key={art.id} onClick={() => { setSelectedArt(art.id); setScreen("detail_article"); }}
               style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden",
@@ -529,13 +544,37 @@ function Stock({ articles, setScreen, setSelectedArt }) {
                     <div style={{ fontSize: 15, fontWeight: 600, color: css.ink }}>{art.nom}</div>
                     <div style={{ fontSize: 12, color: css.inkGhost, marginTop: 2 }}>{art.id}</div>
                   </div>
-                  <Tag status={st} />
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                    <Tag status={st} />
+                    {reserved > 0 && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: css.primary,
+                        background: css.primaryLt, padding: "2px 8px", borderRadius: 99, whiteSpace: "nowrap" }}>
+                        🔒 {reserved} réservé{reserved > 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <StockBar art={art} />
+                {reserved > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                    <span style={{ fontSize: 11, color: css.inkGhost }}>Stock virtuel :</span>
+                    <span style={{ fontSize: 13, fontWeight: 800,
+                      color: stockVirtuel === 0 ? css.danger : stockVirtuel <= art.seuil ? css.warn : css.success }}>
+                      {stockVirtuel} {art.unite}
+                    </span>
+                    <span style={{ fontSize: 10, color: css.inkGhost }}>après livraisons en attente</span>
+                  </div>
+                )}
               </div>
-              <div style={{ height: 8, background: css.border }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: col,
+              <div style={{ height: 8, background: css.border, position: "relative" }}>
+                <div style={{ position: "absolute", left: 0, top: 0, height: "100%",
+                  width: `${pctVirtuel}%`, background: col,
                   transition: "width .5s ease", opacity: 0.75 }} />
+                {pctReserved > 0 && (
+                  <div style={{ position: "absolute", left: `${pctVirtuel}%`, top: 0, height: "100%",
+                    width: `${pctReserved}%`, background: css.primary,
+                    transition: "width .5s ease", opacity: 0.6 }} />
+                )}
               </div>
             </div>
           );
@@ -1586,7 +1625,7 @@ export default function App() {
               onValider={handleValider} onAnnuler={handleAnnulerCommande} setScreen={setScreen} />
           )}
           {screen === "stock" && (
-            <Stock articles={articles} setScreen={setScreen} setSelectedArt={setSelectedArt} />
+            <Stock articles={articles} commandes={commandes} setScreen={setScreen} setSelectedArt={setSelectedArt} />
           )}
           {screen === "detail_article" && (
             <DetailArticle artId={selectedArt} articles={articles} historique={historique}

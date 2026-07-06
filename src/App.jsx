@@ -37,6 +37,7 @@ const ARTICLE_IMAGES = [
   { keys: ["tote"],              src: "/Tote_Bag.jpg" },
   { keys: ["tour", "cou"],       src: "/Tour_de_cou.jpg" },
   { keys: ["maillot"],           src: "/Visuel1_maillot.jpeg" },
+  { keys: ["affiche"],           src: "/Affiche_officielle.jpg" },
 ];
 const getArticleImage = (nom = "") => {
   const n = nom.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");

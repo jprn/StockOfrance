@@ -529,9 +529,10 @@ function Stock({ articles, commandes, setScreen, setSelectedArt }) {
           const bg  = idx % 2 === 0 ? "#FFFFFF" : "#F7F7FB";
           const reserved = reservedByArt[art.id] || 0;
           const stockVirtuel = Math.max(0, art.stock - reserved);
-          const ref = art.stock_initial > 0 ? art.stock_initial : (art.seuil > 0 ? art.seuil * 2.5 : art.stock || 1);
-          const pctActuel = Math.min(100, Math.round((art.stock / ref) * 100));
-          const pctVirtuel = Math.min(100, Math.round((stockVirtuel / ref) * 100));
+          const baseRef = art.stock_initial > 0 ? art.stock_initial : (art.seuil > 0 ? art.seuil * 2.5 : art.stock || 1);
+          const ref = Math.max(baseRef, art.stock);
+          const pctActuel = Math.round((art.stock / ref) * 100);
+          const pctVirtuel = Math.round((stockVirtuel / ref) * 100);
           const pctReserved = pctActuel - pctVirtuel;
           return (
             <div key={art.id} onClick={() => { setSelectedArt(art.id); setScreen("detail_article"); }}
@@ -585,7 +586,7 @@ function Stock({ articles, commandes, setScreen, setSelectedArt }) {
 }
 
 // ── DÉTAIL ARTICLE ────────────────────────────────────────────────────────────
-function DetailArticle({ artId, articles, historique, onMouvement, onSupprimer }) {
+function DetailArticle({ artId, articles, commandes, historique, onMouvement, onSupprimer }) {
   const art = articles.find(a => a.id === artId);
   const [mode, setMode] = useState(null);
   const [qteInput, setQteInput] = useState("");
@@ -595,6 +596,15 @@ function DetailArticle({ artId, articles, historique, onMouvement, onSupprimer }
   if (!art) return null;
   const hist = historique.filter(h => h.artId === art.id);
   const st = stockStatus(art);
+
+  const cmdEnAttente = commandes.filter(c =>
+    c.statut === "en_attente" && c.lignes.some(l => l.artId === art.id)
+  );
+  const reserved = cmdEnAttente.reduce((sum, c) => {
+    const l = c.lignes.find(l => l.artId === art.id);
+    return sum + (l?.qte || 0);
+  }, 0);
+  const stockVirtuel = Math.max(0, art.stock - reserved);
 
   const handleSubmit = () => {
     const q = parseInt(qteInput);
@@ -628,6 +638,23 @@ function DetailArticle({ artId, articles, historique, onMouvement, onSupprimer }
             <div style={{ fontSize: 11, color: css.primary, fontWeight: 600 }}>PRIX</div>
             <div style={{ fontSize: 16, fontWeight: 800, color: css.primary, marginTop: 3 }}>{fmtEur(art.prix || 0)}</div>
             <div style={{ fontSize: 9, color: css.inkGhost }}>/{art.unite}</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+          <div style={{ flex: 1, padding: "10px 12px", background: css.primaryLt, borderRadius: 10, textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: css.primary, fontWeight: 600 }}>RÉSERVÉ</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: reserved > 0 ? css.primary : css.inkGhost }}>{reserved}</div>
+            <div style={{ fontSize: 9, color: css.inkGhost }}>{cmdEnAttente.length} commande{cmdEnAttente.length > 1 ? "s" : ""}</div>
+          </div>
+          <div style={{ flex: 2, padding: "10px 12px", borderRadius: 10, textAlign: "center",
+            background: stockVirtuel === 0 ? css.dangerLt : stockVirtuel <= art.seuil ? css.warnLt : css.successLt }}>
+            <div style={{ fontSize: 11, fontWeight: 600,
+              color: stockVirtuel === 0 ? css.danger : stockVirtuel <= art.seuil ? css.warn : css.success }}>STOCK VIRTUEL</div>
+            <div style={{ fontSize: 22, fontWeight: 800,
+              color: stockVirtuel === 0 ? css.danger : stockVirtuel <= art.seuil ? css.warn : css.success }}>
+              {stockVirtuel}
+            </div>
+            <div style={{ fontSize: 9, color: css.inkGhost }}>après réservations</div>
           </div>
         </div>
       </div>
@@ -665,6 +692,32 @@ function DetailArticle({ artId, articles, historique, onMouvement, onSupprimer }
             Confirmer
           </Btn>
         </div>
+      )}
+
+      {cmdEnAttente.length > 0 && (
+        <>
+          <SectionTitle>Réservations en attente</SectionTitle>
+          <div style={{ background: css.surface, borderRadius: 14, overflow: "hidden",
+            boxShadow: "0 1px 4px rgba(0,0,0,.06)", marginBottom: 4 }}>
+            {cmdEnAttente.map((c, i) => {
+              const l = c.lignes.find(l => l.artId === art.id);
+              return (
+                <div key={c.id} style={{ padding: "12px 16px",
+                  borderBottom: i < cmdEnAttente.length - 1 ? `1px solid ${css.border}` : "none",
+                  display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: css.primary }}>{c.id}</div>
+                    <div style={{ fontSize: 12, color: css.inkSoft, marginTop: 1 }}>{c.client} · {c.date}</div>
+                  </div>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: css.primary,
+                    background: css.primaryLt, padding: "4px 12px", borderRadius: 8 }}>
+                    × {l?.qte}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {hist.length > 0 && (
@@ -1628,7 +1681,7 @@ export default function App() {
             <Stock articles={articles} commandes={commandes} setScreen={setScreen} setSelectedArt={setSelectedArt} />
           )}
           {screen === "detail_article" && (
-            <DetailArticle artId={selectedArt} articles={articles} historique={historique}
+            <DetailArticle artId={selectedArt} articles={articles} commandes={commandes} historique={historique}
               onMouvement={handleMouvement} onSupprimer={handleSupprimer} setScreen={setScreen} />
           )}
           {screen === "historique" && <Historique historique={historique} />}

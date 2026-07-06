@@ -19,6 +19,32 @@ const today = () => new Date().toLocaleDateString("fr-FR");
 const now = () => new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 const histToDb = (h) => ({ date: h.date, art_id: h.artId, art_nom: h.artNom, type: h.type, qte: h.qte, motif: h.motif, prix_unit: h.prixUnit || 0 });
 const dbToHist = (h) => ({ id: h.id, date: h.date, artId: h.art_id, artNom: h.art_nom, type: h.type, qte: h.qte, motif: h.motif, prixUnit: h.prix_unit || 0 });
+const ARTICLE_IMAGES = [
+  { keys: ["bob"],               src: "/Bob.jpg" },
+  { keys: ["flasque", "rose"],   src: "/Flasque_Rose.jpg" },
+  { keys: ["flasque", "vert"],   src: "/Flasque_Verte.jpg" },
+  { keys: ["flasque"],           src: "/Flasque_Rose.jpg" },
+  { keys: ["magnet", "france"],  src: "/Magnet_Ofrance.jpg" },
+  { keys: ["magnet", "vache"],   src: "/Magnet_Vache.jpg" },
+  { keys: ["magnet"],            src: "/Magnet_Ofrance.jpg" },
+  { keys: ["sticker"],           src: "/Stickers.jpg" },
+  { keys: ["tee", "france"],     src: "/TeeShirt_Ofrance.jpg" },
+  { keys: ["tee", "vache"],      src: "/TeeShirt_Vache.jpg" },
+  { keys: ["shirt", "france"],   src: "/TeeShirt_Ofrance.jpg" },
+  { keys: ["shirt", "vache"],    src: "/TeeShirt_Vache.jpg" },
+  { keys: ["t-shirt", "france"], src: "/TeeShirt_Ofrance.jpg" },
+  { keys: ["t-shirt", "vache"],  src: "/TeeShirt_Vache.jpg" },
+  { keys: ["tote"],              src: "/Tote_Bag.jpg" },
+  { keys: ["tour", "cou"],       src: "/Tour_de_cou.jpg" },
+  { keys: ["maillot"],           src: "/Visuel1_maillot.jpeg" },
+];
+const getArticleImage = (nom = "") => {
+  const n = nom.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const { keys, src } of ARTICLE_IMAGES) {
+    if (keys.every(k => n.includes(k))) return src;
+  }
+  return null;
+};
 const fmtEur = (n) => Number(n || 0).toFixed(2).replace(".", ",") + " €";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -370,20 +396,26 @@ function DetailCommande({ cmdId, articles, commandes, onValider, onAnnuler, setS
         <SectionTitle>Articles commandés</SectionTitle>
         <div style={{ background: css.surface, borderRadius: 14, overflow: "hidden", marginBottom: 16,
           boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-          {lignesDetail.map((l, i) => (
-            <div key={i} style={{ padding: "14px 16px",
+          {lignesDetail.map((l, i) => {
+            const img = getArticleImage(l.art?.nom);
+            return (
+            <div key={i} style={{ padding: "12px 16px",
               borderBottom: i < lignesDetail.length - 1 ? `1px solid ${css.border}` : "none",
-              display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
+              display: "flex", alignItems: "center", gap: 12 }}>
+              {img && <img src={img} alt={l.art?.nom}
+                style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", flexShrink: 0,
+                  border: `1px solid ${css.border}` }} />}
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: css.ink }}>{l.art?.nom || l.artId}</div>
                 <div style={{ fontSize: 12, color: css.inkSoft, marginTop: 2 }}>
                   Stock actuel : {l.art?.stock ?? "?"} {l.art?.unite}
                   {l.pasAssez && <span style={{ color: css.danger, fontWeight: 700 }}> ⚠ Insuffisant</span>}
                 </div>
               </div>
-              <span style={{ fontSize: 16, fontWeight: 800, color: css.ink }}>× {l.qte}</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: css.ink, flexShrink: 0 }}>× {l.qte}</span>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {cmd.statut === "en_attente" && (
@@ -540,22 +572,29 @@ function Stock({ articles, commandes, setScreen, setSelectedArt }) {
                 boxShadow: "0 2px 8px rgba(0,0,0,.07)", cursor: "pointer",
                 background: bg, borderLeft: `8px solid ${col}` }}>
               <div style={{ padding: "14px 16px 10px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: css.ink }}>{art.nom}</div>
-                    <div style={{ fontSize: 12, color: css.inkGhost, marginTop: 2 }}>{art.id}</div>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  {(() => { const img = getArticleImage(art.nom); return img ? (
+                    <img src={img} alt={art.nom}
+                      style={{ width: 54, height: 54, borderRadius: 10, objectFit: "cover", flexShrink: 0,
+                        border: `1px solid ${css.border}` }} />
+                  ) : null; })()}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: css.ink }}>{art.nom}</div>
+                      <div style={{ fontSize: 12, color: css.inkGhost, marginTop: 2 }}>{art.id}</div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                      <Tag status={st} />
+                      {reserved > 0 && (
+                        <span style={{ fontSize: 10, fontWeight: 700, color: css.primary,
+                          background: css.primaryLt, padding: "2px 8px", borderRadius: 99, whiteSpace: "nowrap" }}>
+                          🔒 {reserved} réservé{reserved > 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                    <Tag status={st} />
-                    {reserved > 0 && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: css.primary,
-                        background: css.primaryLt, padding: "2px 8px", borderRadius: 99, whiteSpace: "nowrap" }}>
-                        🔒 {reserved} réservé{reserved > 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <StockBar art={art} />
+                  <StockBar art={art} />
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
                   <span style={{ fontSize: 11, color: css.inkGhost }}>Stock virtuel :</span>
                   <span style={{ fontSize: 13, fontWeight: 800,
@@ -565,6 +604,8 @@ function Stock({ articles, commandes, setScreen, setSelectedArt }) {
                   <span style={{ fontSize: 10, color: css.inkGhost }}>
                     {reserved > 0 ? `(−${reserved} réservé${reserved > 1 ? "s" : ""})` : "aucune réservation"}
                   </span>
+                </div>
+                  </div>
                 </div>
               </div>
               <div style={{ height: 8, background: css.border, position: "relative" }}>
@@ -617,6 +658,10 @@ function DetailArticle({ artId, articles, commandes, historique, onMouvement, on
     <div className="screen-pad" style={{ padding: "16px 16px 80px", overflowY: "auto", flex: 1 }}>
       <div style={{ background: css.surface, borderRadius: 14, padding: 16, marginBottom: 10,
         boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+        {(() => { const img = getArticleImage(art.nom); return img ? (
+          <img src={img} alt={art.nom}
+            style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 10, marginBottom: 14 }} />
+        ) : null; })()}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: css.ink }}>{art.nom}</div>
@@ -1108,12 +1153,16 @@ function VenteDirecte({ articles, onVente }) {
         {filtered.map(art => {
           const inCart = panier[art.id] || 0;
           const st = stockStatus(art);
+          const img = getArticleImage(art.nom);
           return (
             <div key={art.id} style={{ background: css.surface, borderRadius: 14, padding: "12px 16px",
               marginBottom: 8, boxShadow: "0 1px 4px rgba(0,0,0,.06)",
               opacity: art.stock === 0 && inCart === 0 ? 0.5 : 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                {img && <img src={img} alt={art.nom}
+                  style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", flexShrink: 0,
+                    border: `1px solid ${css.border}` }} />}
+                <div style={{ flex: 1, minWidth: 0, marginRight: 4 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: css.ink }}>{art.nom}</div>
                   <div style={{ fontSize: 11, color: css.inkGhost, marginTop: 2 }}>
                     <Tag status={st} />{" "}
